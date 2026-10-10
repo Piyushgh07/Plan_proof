@@ -203,7 +203,7 @@ async def compare_hypothetical_index(
                 except SQLAlchemyError:
                     await conn.invalidate()
 
-    except (SQLAlchemyError, ValueError, TypeError, KeyError) as exc:
+    except Exception as exc:
         return HypoPGResult(
             status="failed",
             reason=f"Plan comparison failed: {type(exc).__name__}.",

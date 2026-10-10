@@ -2,7 +2,7 @@
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.ext.asyncio import create_async_engine
 from app.verifier.candidates import IndexCandidate
 from app.verifier.hypopg import compare_hypothetical_index
 
@@ -312,3 +312,32 @@ async def test_successful_cleanup_does_not_invalidate_connection(monkeypatch):
 
     assert result.status == "compared"
     assert connection.invalidated is False
+
+@pytest.mark.asyncio
+async def test_real_sandbox_connection_failure_is_reported_safely(
+    monkeypatch,
+):
+    # Port 1 should not have a PostgreSQL server listening.
+    engine = create_async_engine(
+        "postgresql+asyncpg://test_user:test_password"
+        "@127.0.0.1:1/test_db",
+        connect_args={"timeout": 1},
+        pool_pre_ping=False,
+    )
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine",
+        engine,
+    )
+
+    try:
+        result = await compare_hypothetical_index(
+            "SELECT * FROM orders WHERE user_id = 12345",
+            IndexCandidate("orders", ("user_id",)),
+        )
+
+        assert result.status == "failed"
+        assert "ConnectionRefusedError" in result.reason
+        assert "test_password" not in result.reason
+        assert "127.0.0.1" not in result.reason
+    finally:
+        await engine.dispose()
