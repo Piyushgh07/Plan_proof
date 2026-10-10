@@ -1,0 +1,106 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plan-proof-app
+    env_file:
+      - .env
+    environment:
+      APP_DATABASE_URL: postgresql+asyncpg://app_user:app_password@target:5432/app_db
+      TARGET_DATABASE_URL: postgresql://plan_proof_reader:PlanProofReader_21542_29157@target:5432/target_db
+      SANDBOX_DATABASE_URL: postgresql://sandbox_admin:piyush_sandbox_21542@sandbox:5432/sandbox_db
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      target:
+        condition: service_healthy
+      sandbox:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - plan-proof
+
+  target:
+    image: postgres:16.15
+    container_name: plan-proof-target
+    environment:
+      POSTGRES_USER: target_admin
+      POSTGRES_PASSWORD: target_admin_password
+      POSTGRES_DB: target_db
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+    ports:
+      - "5433:5432"
+    volumes:
+      - target_data:/var/lib/postgresql/data
+      - ./docker/target/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U target_admin -d target_db
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - plan-proof
+
+  sandbox:
+    build:
+      context: ./docker/sandbox
+      dockerfile: Dockerfile
+    container_name: plan-proof-sandbox
+    environment:
+      POSTGRES_USER: sandbox_admin
+      POSTGRES_PASSWORD: sandbox_admin_password
+      POSTGRES_DB: sandbox_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - sandbox_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U sandbox_admin -d sandbox_db
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - plan-proof
+
+  redis:
+    image: redis:7
+    container_name: plan-proof-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - plan-proof
+
+volumes:
+  target_data:
+  sandbox_data:
+  redis_data:
+
+networks:
+  plan-proof:
+    driver: bridge

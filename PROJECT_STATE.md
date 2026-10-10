@@ -1,0 +1,164 @@
+# Project State
+
+## Project
+
+Plan Proof — verified PostgreSQL query advisor.
+
+## Current Part
+
+Part 0 — Infrastructure: COMPLETE
+
+## Environment
+
+- OS: Ubuntu
+- Python: 3.12.3
+- Docker: 29.8.2
+- Docker Compose: 5.5.1
+- PostgreSQL: 16.15
+- pg_stat_statements: 1.10
+- HypoPG: 1.4.3
+- Redis: 7
+
+## Python Packages Currently Installed
+
+- FastAPI: 0.142.2
+- Uvicorn: 0.54.0
+- Pydantic: 2.13.5
+- pydantic-settings: 2.15.0
+- SQLAlchemy: 2.1.3
+- asyncpg: 0.31.0
+- pytest: 9.1.1
+- pytest-asyncio: 1.4.0
+- ruff: 0.16.10
+
+## Completed
+
+- Git repository initialized.
+- Docker Compose infrastructure created.
+- Target PostgreSQL container created.
+- `pg_stat_statements` enabled and verified.
+- Sandbox PostgreSQL container created.
+- HypoPG 1.4.3 installed and verified.
+- Redis 7 container created and verified.
+- `app_db` created.
+- `app_user` created.
+- `app_user` blocked from connecting to `target_db`.
+- FastAPI application created.
+- `/health` endpoint created.
+- FastAPI Docker image created.
+- FastAPI container started successfully.
+- App-to-PostgreSQL connectivity verified for `app_db`, `target_db`, and `sandbox_db`.
+
+## Current Structure
+
+```text
+plan-proof/
+├── app/
+│   ├── core/
+│   │   └── settings.py
+│   └── main.py
+├── docker/
+│   ├── sandbox/
+│   │   └── Dockerfile
+│   └── target/
+│       └── init.sql
+├── docker-compose.yml
+├── Dockerfile
+├── .env.example
+├── .gitignore
+├── DECISIONS.md
+├── PROJECT_STATE.md
+├── pyproject.toml
+├── README.md
+├── tests/
+└── .venv/
+
+## Part 1 — Benchmark Dataset
+
+Status: COMPLETE
+
+### Dataset
+
+- users: 500,000
+- products: 100,000
+- orders: 2,000,000
+- order_items: 5,000,000
+- events: 5,000,000
+- Total rows: 12,600,000
+
+### Generator
+
+- `app/benchmark/config.py`
+- `app/benchmark/generator.py`
+- `app/benchmark/workload.py`
+- `app/benchmark/load.py`
+
+### Database
+
+- Benchmark schema: `docker/benchmark/schema.sql`
+- Target database: PostgreSQL 16.15
+- Data loaded using asyncpg PostgreSQL COPY
+- `ANALYZE` executed after loading
+
+### Validation
+
+- Expected row counts: PASS
+- Foreign-key integrity: PASS
+- Data distributions: PASS
+- Baseline indexes: PASS
+- PostgreSQL statistics: PASS
+
+### Important Methodology
+
+Workload expected fixes are provisional until verified experimentally using PostgreSQL execution plans and controlled measurements.
+
+## Part 2 — Application Database
+
+Status: MIGRATION APPLIED; TABLE VERIFICATION PENDING
+
+### Models
+- `AnalysisRun`
+- `QueryRecord`
+- `Candidate`
+- `Verification`
+
+### Migration
+- Initial revision: `0001_initial_app_schema`
+- Alembic upgrade: PASS
+- Alembic current revision: PASS
+- Table existence: Pending verification
+
+## Part 3 — Safe Database Connections
+
+Status: VERIFIED
+
+- [x] Dedicated target reader role created.
+- [x] Target read access verified.
+- [x] Target write attempt rejected by PostgreSQL permissions.
+- [x] Target connection verified with read-only mode enabled.
+- [x] Sandbox connection verified.
+- [x] Statement timeout verified at 30 seconds.
+- [x] Target and sandbox credentials configured separately.
+## Part 4 — Query Collection and Plan Capture
+
+Status: INITIAL IMPLEMENTATION VERIFIED; HARDENING REMAINS
+
+- [x] Query statistics collector implemented.
+- [x] SQL validator tests pass, including nested row-locking cases.
+- [x] JSON plan capture implemented using `EXPLAIN (FORMAT JSON)`.
+- [x] Plan capture uses a read-only transaction.
+- [x] Unresolved parameter references are rejected.
+- [x] Live plan-capture smoke test succeeded.
+- [x] Latest full test suite: 25 passed.
+- [x] AST-based parameter detection implemented and tested.
+- [x] Database connection failure is reported safely without leaking details.
+- [ ] Add more plan-capture and parameter edge-case tests.
+- [ ] Review query eligibility and planning-time side-effect risks before treating this as production-safe.
+- [x] All 40 benchmark queries successfully produced JSON plans.
+
+
+## Benchmark Validation Note — Q011 and Q031
+
+- [x] Corrected expected index metadata for Q011 and Q031; both use provisional `NO_CHANGE` labels.
+- [x] Confirmed PostgreSQL rejects a direct index on `DATE(timestamptz)` in the sandbox.
+- [ ] Implement and verify query-rewrite candidates for these cases.

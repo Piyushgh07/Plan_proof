@@ -1,0 +1,379 @@
+{
+  "query_id": "Q035",
+  "description": "Exploratory hypothetical-index comparison",
+  "results": [
+    {
+      "candidate": "existing_candidate",
+      "table": "events",
+      "columns": [
+        "user_id"
+      ],
+      "status": "compared",
+      "reason": "Plans compared, but the exact proposed hypothetical index was not selected.",
+      "baseline_cost": 190497.43,
+      "candidate_cost": 190497.43,
+      "candidate_index_used": false,
+      "baseline_index_names": [],
+      "candidate_index_names": [],
+      "baseline_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 13814.41,
+        "Total Cost": 190497.43,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10946.0,
+            "Total Cost": 10946.0,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 0.0,
+                "Total Cost": 10946.0,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Filter": "(country = 'IN'::text)"
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 13814.41,
+        "Total Cost": 190497.43,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10946.0,
+            "Total Cost": 10946.0,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 0.0,
+                "Total Cost": 10946.0,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Filter": "(country = 'IN'::text)"
+              }
+            ]
+          }
+        ]
+      },
+      "estimated_improvement_percent": 0.0
+    },
+    {
+      "candidate": "users_country",
+      "table": "users",
+      "columns": [
+        "country"
+      ],
+      "status": "compared",
+      "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+      "baseline_cost": 190497.43,
+      "candidate_cost": 189647.85,
+      "candidate_index_used": true,
+      "baseline_index_names": [],
+      "candidate_index_names": [
+        "<13625>btree_users_country"
+      ],
+      "baseline_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 13814.41,
+        "Total Cost": 190497.43,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10946.0,
+            "Total Cost": 10946.0,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 0.0,
+                "Total Cost": 10946.0,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Filter": "(country = 'IN'::text)"
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 12964.83,
+        "Total Cost": 189647.85,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10096.42,
+            "Total Cost": 10096.42,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Bitmap Heap Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 3215.0,
+                "Total Cost": 10096.42,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Recheck Cond": "(country = 'IN'::text)",
+                "Plans": [
+                  {
+                    "Node Type": "Bitmap Index Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Index Name": "<13625>btree_users_country",
+                    "Startup Cost": 0.0,
+                    "Total Cost": 3171.3,
+                    "Plan Rows": 174833,
+                    "Plan Width": 0,
+                    "Index Cond": "(country = 'IN'::text)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "estimated_improvement_percent": 0.44597976991079996
+    },
+    {
+      "candidate": "users_country_id",
+      "table": "users",
+      "columns": [
+        "country",
+        "id"
+      ],
+      "status": "compared",
+      "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+      "baseline_cost": 190497.43,
+      "candidate_cost": 185560.67,
+      "candidate_index_used": true,
+      "baseline_index_names": [],
+      "candidate_index_names": [
+        "<13625>btree_users_country_id"
+      ],
+      "baseline_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 13814.41,
+        "Total Cost": 190497.43,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10946.0,
+            "Total Cost": 10946.0,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 0.0,
+                "Total Cost": 10946.0,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Filter": "(country = 'IN'::text)"
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Join Type": "Inner",
+        "Startup Cost": 8877.65,
+        "Total Cost": 185560.67,
+        "Plan Rows": 1748244,
+        "Plan Width": 17,
+        "Inner Unique": true,
+        "Hash Cond": "(e.user_id = u.id)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "events",
+            "Alias": "e",
+            "Startup Cost": 0.0,
+            "Total Cost": 94517.55,
+            "Plan Rows": 4999755,
+            "Plan Width": 25
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 6009.24,
+            "Total Cost": 6009.24,
+            "Plan Rows": 174833,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Index Only Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "<13625>btree_users_country_id",
+                "Relation Name": "users",
+                "Alias": "u",
+                "Startup Cost": 0.05,
+                "Total Cost": 6009.24,
+                "Plan Rows": 174833,
+                "Plan Width": 8,
+                "Index Cond": "(country = 'IN'::text)"
+              }
+            ]
+          }
+        ]
+      },
+      "estimated_improvement_percent": 2.5915100271956324
+    }
+  ],
+  "note": "Planner cost is estimated cost, not measured runtime. No permanent indexes are created."
+}

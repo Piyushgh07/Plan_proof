@@ -1,0 +1,4835 @@
+{
+  "generated_at_utc": "2026-10-10T11:45:31.765084+00:00",
+  "database": "sandbox",
+  "summary": {
+    "total_cases": 40,
+    "baseline_captured": 40,
+    "baseline_invalid": 0,
+    "baseline_failed": 0,
+    "candidates_mapped": 13,
+    "candidate_comparisons": 13,
+    "accepted": 9,
+    "rejected": 2,
+    "inconclusive": 2,
+    "expected_create_index_cases_evaluated": 13,
+    "agreements_with_create_index_labels": 9,
+    "disagreements_with_create_index_labels": 2,
+    "inconclusive_create_index_labels": 2,
+    "notes": [
+      "Planner costs are estimates, not measured execution times.",
+      "Expected labels are benchmark annotations, not ground-truth proof.",
+      "NO_CHANGE cases without a mapped candidate are not classified.",
+      "No permanent indexes are created by this runner."
+    ]
+  },
+  "results": [
+    {
+      "query_id": "Q001",
+      "category": "missing_index",
+      "sql": "SELECT * FROM orders WHERE user_id = 12345;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "user_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 29525.17,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 29525.17,
+          "Plan Rows": 5,
+          "Plan Width": 39,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 28524.67,
+              "Plan Rows": 2,
+              "Plan Width": 39,
+              "Filter": "(user_id = 12345)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 28524.67,
+              "estimated_rows": 2
+            }
+          ],
+          "total_cost": 29525.17,
+          "estimated_rows": 5,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "orders",
+        "columns": [
+          "user_id"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 24.14,
+        "root_node": "Index Scan",
+        "hypothetical_index_name": "<13625>btree_orders_user_id",
+        "index_used": true,
+        "baseline_cost_from_comparison": 29525.17,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 29525.17,
+          "Plan Rows": 5,
+          "Plan Width": 39,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 28524.67,
+              "Plan Rows": 2,
+              "Plan Width": 39,
+              "Filter": "(user_id = 12345)"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Index Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "<13625>btree_orders_user_id",
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 0.05,
+          "Total Cost": 24.14,
+          "Plan Rows": 5,
+          "Plan Width": 39,
+          "Index Cond": "(user_id = 12345)"
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 28524.67,
+              "estimated_rows": 2
+            }
+          ],
+          "total_cost": 29525.17,
+          "estimated_rows": 5,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Index Scan",
+          "root_strategy": "index_scan",
+          "scan_strategies": [
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "<13625>btree_orders_user_id",
+              "estimated_cost": 24.14,
+              "estimated_rows": 5
+            }
+          ],
+          "total_cost": 24.14,
+          "estimated_rows": 5,
+          "index_names": [
+            "<13625>btree_orders_user_id"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.92%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.91823925145901
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q002",
+      "category": "missing_fk_index",
+      "sql": "SELECT * FROM order_items WHERE order_id = 123456;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "order_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 68746.77,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 68746.77,
+          "Plan Rows": 3,
+          "Plan Width": 34,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "order_items",
+              "Alias": "order_items",
+              "Startup Cost": 0.0,
+              "Total Cost": 67746.47,
+              "Plan Rows": 1,
+              "Plan Width": 34,
+              "Filter": "(order_id = 123456)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 67746.47,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 68746.77,
+          "estimated_rows": 3,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "order_items",
+        "columns": [
+          "order_id"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 16.11,
+        "root_node": "Index Scan",
+        "hypothetical_index_name": "<13625>btree_order_items_order_id",
+        "index_used": true,
+        "baseline_cost_from_comparison": 68746.77,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 68746.77,
+          "Plan Rows": 3,
+          "Plan Width": 34,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "order_items",
+              "Alias": "order_items",
+              "Startup Cost": 0.0,
+              "Total Cost": 67746.47,
+              "Plan Rows": 1,
+              "Plan Width": 34,
+              "Filter": "(order_id = 123456)"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Index Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "<13625>btree_order_items_order_id",
+          "Relation Name": "order_items",
+          "Alias": "order_items",
+          "Startup Cost": 0.06,
+          "Total Cost": 16.11,
+          "Plan Rows": 3,
+          "Plan Width": 34,
+          "Index Cond": "(order_id = 123456)"
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 67746.47,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 68746.77,
+          "estimated_rows": 3,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Index Scan",
+          "root_strategy": "index_scan",
+          "scan_strategies": [
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "<13625>btree_order_items_order_id",
+              "estimated_cost": 16.11,
+              "estimated_rows": 3
+            }
+          ],
+          "total_cost": 16.11,
+          "estimated_rows": 3,
+          "index_names": [
+            "<13625>btree_order_items_order_id"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.98%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.97656617176341
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q003",
+      "category": "existing_good_index",
+      "sql": "SELECT * FROM products WHERE category = 'electronics';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 1409.57,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 164.54,
+          "Total Cost": 1409.57,
+          "Plan Rows": 14483,
+          "Plan Width": 51,
+          "Recheck Cond": "(category = 'electronics'::text)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "products_category_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 160.91,
+              "Plan Rows": 14483,
+              "Plan Width": 0,
+              "Index Cond": "(category = 'electronics'::text)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 1409.57,
+              "estimated_rows": 14483
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "products_category_idx",
+              "estimated_cost": 160.91,
+              "estimated_rows": 14483
+            }
+          ],
+          "total_cost": 1409.57,
+          "estimated_rows": 14483,
+          "index_names": [
+            "products_category_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q004",
+      "category": "low_selectivity",
+      "sql": "SELECT * FROM users WHERE is_active = true;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 9696.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 0.0,
+          "Total Cost": 9696.0,
+          "Plan Rows": 460783,
+          "Plan Width": 42,
+          "Filter": "is_active"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 9696.0,
+              "estimated_rows": 460783
+            }
+          ],
+          "total_cost": 9696.0,
+          "estimated_rows": 460783,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q005",
+      "category": "missing_index_sort",
+      "sql": "SELECT * FROM events WHERE user_id = 12345 ORDER BY occurred_at DESC LIMIT 20;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "user_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 71561.64,
+        "root_node": "Limit",
+        "plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 71560.47,
+          "Total Cost": 71561.64,
+          "Plan Rows": 10,
+          "Plan Width": 38,
+          "Plans": [
+            {
+              "Node Type": "Gather Merge",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 71560.47,
+              "Total Cost": 71561.64,
+              "Plan Rows": 10,
+              "Plan Width": 38,
+              "Workers Planned": 2,
+              "Plans": [
+                {
+                  "Node Type": "Sort",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 70560.45,
+                  "Total Cost": 70560.46,
+                  "Plan Rows": 5,
+                  "Plan Width": 38,
+                  "Sort Key": [
+                    "occurred_at DESC"
+                  ],
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "events",
+                      "Alias": "events",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 70560.39,
+                      "Plan Rows": 5,
+                      "Plan Width": 38,
+                      "Filter": "(user_id = 12345)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Limit",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 70560.39,
+              "estimated_rows": 5
+            }
+          ],
+          "total_cost": 71561.64,
+          "estimated_rows": 10,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "events",
+        "columns": [
+          "user_id"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 47.98,
+        "root_node": "Limit",
+        "hypothetical_index_name": "<13625>btree_events_user_id",
+        "index_used": true,
+        "baseline_cost_from_comparison": 71561.64,
+        "baseline_plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 71560.47,
+          "Total Cost": 71561.64,
+          "Plan Rows": 10,
+          "Plan Width": 38,
+          "Plans": [
+            {
+              "Node Type": "Gather Merge",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 71560.47,
+              "Total Cost": 71561.64,
+              "Plan Rows": 10,
+              "Plan Width": 38,
+              "Workers Planned": 2,
+              "Plans": [
+                {
+                  "Node Type": "Sort",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 70560.45,
+                  "Total Cost": 70560.46,
+                  "Plan Rows": 5,
+                  "Plan Width": 38,
+                  "Sort Key": [
+                    "occurred_at DESC"
+                  ],
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "events",
+                      "Alias": "events",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 70560.39,
+                      "Plan Rows": 5,
+                      "Plan Width": 38,
+                      "Filter": "(user_id = 12345)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 47.95,
+          "Total Cost": 47.98,
+          "Plan Rows": 11,
+          "Plan Width": 38,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 47.95,
+              "Total Cost": 47.98,
+              "Plan Rows": 11,
+              "Plan Width": 38,
+              "Sort Key": [
+                "occurred_at DESC"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Bitmap Heap Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "events",
+                  "Alias": "events",
+                  "Startup Cost": 4.14,
+                  "Total Cost": 47.76,
+                  "Plan Rows": 11,
+                  "Plan Width": 38,
+                  "Recheck Cond": "(user_id = 12345)",
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Index Name": "<13625>btree_events_user_id",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 4.14,
+                      "Plan Rows": 11,
+                      "Plan Width": 0,
+                      "Index Cond": "(user_id = 12345)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Limit",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 70560.39,
+              "estimated_rows": 5
+            }
+          ],
+          "total_cost": 71561.64,
+          "estimated_rows": 10,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Limit",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 47.76,
+              "estimated_rows": 11
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_events_user_id",
+              "estimated_cost": 4.14,
+              "estimated_rows": 11
+            }
+          ],
+          "total_cost": 47.98,
+          "estimated_rows": 11,
+          "index_names": [
+            "<13625>btree_events_user_id"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.93%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.93295290605414
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q006",
+      "category": "existing_good_index",
+      "sql": "SELECT * FROM orders WHERE created_at >= '2026-09-01';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 20107.61,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 1286.53,
+          "Total Cost": 20107.61,
+          "Plan Rows": 57046,
+          "Plan Width": 39,
+          "Recheck Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 1272.27,
+              "Plan Rows": 57046,
+              "Plan Width": 0,
+              "Index Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 20107.61,
+              "estimated_rows": 57046
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 1272.27,
+              "estimated_rows": 57046
+            }
+          ],
+          "total_cost": 20107.61,
+          "estimated_rows": 57046,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q007",
+      "category": "existing_composite_index",
+      "sql": "SELECT * FROM orders WHERE status = 'completed' AND created_at >= '2026-09-01';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 20216.59,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 1075.47,
+          "Total Cost": 20216.59,
+          "Plan Rows": 31126,
+          "Plan Width": 39,
+          "Recheck Cond": "((status = 'completed'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_status_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 1067.69,
+              "Plan Rows": 31126,
+              "Plan Width": 0,
+              "Index Cond": "((status = 'completed'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 20216.59,
+              "estimated_rows": 31126
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 1067.69,
+              "estimated_rows": 31126
+            }
+          ],
+          "total_cost": 20216.59,
+          "estimated_rows": 31126,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q008",
+      "category": "missing_fk_index",
+      "sql": "SELECT * FROM events WHERE user_id = 12345;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "user_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 71561.49,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 71561.49,
+          "Plan Rows": 11,
+          "Plan Width": 38,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "events",
+              "Alias": "events",
+              "Startup Cost": 0.0,
+              "Total Cost": 70560.39,
+              "Plan Rows": 5,
+              "Plan Width": 38,
+              "Filter": "(user_id = 12345)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 70560.39,
+              "estimated_rows": 5
+            }
+          ],
+          "total_cost": 71561.49,
+          "estimated_rows": 11,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "events",
+        "columns": [
+          "user_id"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 47.76,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_events_user_id",
+        "index_used": true,
+        "baseline_cost_from_comparison": 71561.49,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 71561.49,
+          "Plan Rows": 11,
+          "Plan Width": 38,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "events",
+              "Alias": "events",
+              "Startup Cost": 0.0,
+              "Total Cost": 70560.39,
+              "Plan Rows": 5,
+              "Plan Width": 38,
+              "Filter": "(user_id = 12345)"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "events",
+          "Alias": "events",
+          "Startup Cost": 4.14,
+          "Total Cost": 47.76,
+          "Plan Rows": 11,
+          "Plan Width": 38,
+          "Recheck Cond": "(user_id = 12345)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_events_user_id",
+              "Startup Cost": 0.0,
+              "Total Cost": 4.14,
+              "Plan Rows": 11,
+              "Plan Width": 0,
+              "Index Cond": "(user_id = 12345)"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 70560.39,
+              "estimated_rows": 5
+            }
+          ],
+          "total_cost": 71561.49,
+          "estimated_rows": 11,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 47.76,
+              "estimated_rows": 11
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_events_user_id",
+              "estimated_cost": 4.14,
+              "estimated_rows": 11
+            }
+          ],
+          "total_cost": 47.76,
+          "estimated_rows": 11,
+          "index_names": [
+            "<13625>btree_events_user_id"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.93%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.93326019343644
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q009",
+      "category": "existing_good_index",
+      "sql": "SELECT * FROM events WHERE event_type = 'login';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 73142.84,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "events",
+          "Alias": "events",
+          "Startup Cost": 13342.34,
+          "Total Cost": 73142.84,
+          "Plan Rows": 1222440,
+          "Plan Width": 38,
+          "Recheck Cond": "(event_type = 'login'::text)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "events_event_type_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 13036.73,
+              "Plan Rows": 1222440,
+              "Plan Width": 0,
+              "Index Cond": "(event_type = 'login'::text)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 73142.84,
+              "estimated_rows": 1222440
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "events_event_type_idx",
+              "estimated_cost": 13036.73,
+              "estimated_rows": 1222440
+            }
+          ],
+          "total_cost": 73142.84,
+          "estimated_rows": 1222440,
+          "index_names": [
+            "events_event_type_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q010",
+      "category": "low_selectivity_range",
+      "sql": "SELECT * FROM orders WHERE created_at >= '2024-01-01';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 43108.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 0.0,
+          "Total Cost": 43108.0,
+          "Plan Rows": 1999552,
+          "Plan Width": 39,
+          "Filter": "(created_at >= '2024-01-01 00:00:00+00'::timestamp with time zone)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 43108.0,
+              "estimated_rows": 1999552
+            }
+          ],
+          "total_cost": 43108.0,
+          "estimated_rows": 1999552,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q011",
+      "category": "function_on_column",
+      "sql": "SELECT * FROM orders WHERE DATE(created_at) = '2026-09-15';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": true,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 32608.0,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 32608.0,
+          "Plan Rows": 10000,
+          "Plan Width": 39,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 30608.0,
+              "Plan Rows": 4167,
+              "Plan Width": 39,
+              "Filter": "(date(created_at) = '2026-09-15'::date)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 30608.0,
+              "estimated_rows": 4167
+            }
+          ],
+          "total_cost": 32608.0,
+          "estimated_rows": 10000,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q012",
+      "category": "prefix_like",
+      "sql": "SELECT * FROM products WHERE name LIKE 'phone%';",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "name"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 2314.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 15152,
+          "Plan Width": 51,
+          "Filter": "(name ~~ 'phone%'::text)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 15152
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 15152,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "products",
+        "columns": [
+          "name"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 1717.98,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_products_name",
+        "index_used": true,
+        "baseline_cost_from_comparison": 2314.0,
+        "baseline_plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 15152,
+          "Plan Width": 51,
+          "Filter": "(name ~~ 'phone%'::text)"
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 468.34,
+          "Total Cost": 1717.98,
+          "Plan Rows": 15152,
+          "Plan Width": 51,
+          "Filter": "(name ~~ 'phone%'::text)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_products_name",
+              "Startup Cost": 0.0,
+              "Total Cost": 464.55,
+              "Plan Rows": 14851,
+              "Plan Width": 0,
+              "Index Cond": "((name ~>=~ 'phone'::text) AND (name ~<~ 'phonf'::text))"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 15152
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 15152,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 1717.98,
+              "estimated_rows": 15152
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_products_name",
+              "estimated_cost": 464.55,
+              "estimated_rows": 14851
+            }
+          ],
+          "total_cost": 1717.98,
+          "estimated_rows": 15152,
+          "index_names": [
+            "<13625>btree_products_name"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 25.76%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 25.757130509939497
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q013",
+      "category": "leading_wildcard_like",
+      "sql": "SELECT * FROM products WHERE name LIKE '%phone%';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 2314.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 25253,
+          "Plan Width": 51,
+          "Filter": "(name ~~ '%phone%'::text)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 25253
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 25253,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q014",
+      "category": "or_predicate",
+      "sql": "SELECT * FROM users WHERE country = 'IN' OR country = 'US';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 12196.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 0.0,
+          "Total Cost": 12196.0,
+          "Plan Rows": 256494,
+          "Plan Width": 42,
+          "Filter": "((country = 'IN'::text) OR (country = 'US'::text))"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 12196.0,
+              "estimated_rows": 256494
+            }
+          ],
+          "total_cost": 12196.0,
+          "estimated_rows": 256494,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q015",
+      "category": "missing_fk_index",
+      "sql": "SELECT o.id, oi.product_id, oi.quantity FROM orders AS o JOIN order_items AS oi ON oi.order_id = o.id WHERE o.id = 123456;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "order_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 68755.23,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.43,
+          "Total Cost": 68755.23,
+          "Plan Rows": 3,
+          "Plan Width": 20,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Nested Loop",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0.43,
+              "Total Cost": 67754.93,
+              "Plan Rows": 1,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "order_items",
+                  "Alias": "oi",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 67746.47,
+                  "Plan Rows": 1,
+                  "Plan Width": 20,
+                  "Filter": "(order_id = 123456)"
+                },
+                {
+                  "Node Type": "Index Only Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "orders_pkey",
+                  "Relation Name": "orders",
+                  "Alias": "o",
+                  "Startup Cost": 0.43,
+                  "Total Cost": 8.45,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Index Cond": "(id = 123456)"
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_only_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 67746.47,
+              "estimated_rows": 1
+            },
+            {
+              "node_type": "Index Only Scan",
+              "strategy": "index_only_scan",
+              "index_name": "orders_pkey",
+              "estimated_cost": 8.45,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 68755.23,
+          "estimated_rows": 3,
+          "index_names": [
+            "orders_pkey"
+          ]
+        }
+      },
+      "candidate": {
+        "table": "order_items",
+        "columns": [
+          "order_id"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 24.58,
+        "root_node": "Nested Loop",
+        "hypothetical_index_name": "<13625>btree_order_items_order_id",
+        "index_used": true,
+        "baseline_cost_from_comparison": 68755.23,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.43,
+          "Total Cost": 68755.23,
+          "Plan Rows": 3,
+          "Plan Width": 20,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Nested Loop",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0.43,
+              "Total Cost": 67754.93,
+              "Plan Rows": 1,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "order_items",
+                  "Alias": "oi",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 67746.47,
+                  "Plan Rows": 1,
+                  "Plan Width": 20,
+                  "Filter": "(order_id = 123456)"
+                },
+                {
+                  "Node Type": "Index Only Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "orders_pkey",
+                  "Relation Name": "orders",
+                  "Alias": "o",
+                  "Startup Cost": 0.43,
+                  "Total Cost": 8.45,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Index Cond": "(id = 123456)"
+                }
+              ]
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Nested Loop",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 0.48,
+          "Total Cost": 24.58,
+          "Plan Rows": 3,
+          "Plan Width": 20,
+          "Inner Unique": false,
+          "Plans": [
+            {
+              "Node Type": "Index Only Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Forward",
+              "Index Name": "orders_pkey",
+              "Relation Name": "orders",
+              "Alias": "o",
+              "Startup Cost": 0.43,
+              "Total Cost": 8.45,
+              "Plan Rows": 1,
+              "Plan Width": 8,
+              "Index Cond": "(id = 123456)"
+            },
+            {
+              "Node Type": "Index Scan",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Forward",
+              "Index Name": "<13625>btree_order_items_order_id",
+              "Relation Name": "order_items",
+              "Alias": "oi",
+              "Startup Cost": 0.06,
+              "Total Cost": 16.11,
+              "Plan Rows": 3,
+              "Plan Width": 20,
+              "Index Cond": "(order_id = 123456)"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_only_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 67746.47,
+              "estimated_rows": 1
+            },
+            {
+              "node_type": "Index Only Scan",
+              "strategy": "index_only_scan",
+              "index_name": "orders_pkey",
+              "estimated_cost": 8.45,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 68755.23,
+          "estimated_rows": 3,
+          "index_names": [
+            "orders_pkey"
+          ]
+        },
+        "candidate_plan_summary": {
+          "root_node": "Nested Loop",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_only_scan",
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Only Scan",
+              "strategy": "index_only_scan",
+              "index_name": "orders_pkey",
+              "estimated_cost": 8.45,
+              "estimated_rows": 1
+            },
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "<13625>btree_order_items_order_id",
+              "estimated_cost": 16.11,
+              "estimated_rows": 3
+            }
+          ],
+          "total_cost": 24.58,
+          "estimated_rows": 3,
+          "index_names": [
+            "<13625>btree_order_items_order_id",
+            "orders_pkey"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.96%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.96424999232786
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q016",
+      "category": "aggregation",
+      "sql": "SELECT user_id, COUNT(*) FROM orders GROUP BY user_id;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 170313.09,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Hashed",
+          "Partial Mode": "Simple",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 150608.0,
+          "Total Cost": 170313.09,
+          "Plan Rows": 408009,
+          "Plan Width": 16,
+          "Group Key": [
+            "user_id"
+          ],
+          "Planned Partitions": 8,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 38108.0,
+              "Plan Rows": 2000000,
+              "Plan Width": 8
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 38108.0,
+              "estimated_rows": 2000000
+            }
+          ],
+          "total_cost": 170313.09,
+          "estimated_rows": 408009,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q017",
+      "category": "existing_composite_index",
+      "sql": "SELECT * FROM orders WHERE created_at >= '2026-09-01' AND status = 'completed';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 20216.59,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 1075.47,
+          "Total Cost": 20216.59,
+          "Plan Rows": 31126,
+          "Plan Width": 39,
+          "Recheck Cond": "((status = 'completed'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_status_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 1067.69,
+              "Plan Rows": 31126,
+              "Plan Width": 0,
+              "Index Cond": "((status = 'completed'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 20216.59,
+              "estimated_rows": 31126
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 1067.69,
+              "estimated_rows": 31126
+            }
+          ],
+          "total_cost": 20216.59,
+          "estimated_rows": 31126,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q018",
+      "category": "existing_primary_key",
+      "sql": "SELECT id, name, price FROM products WHERE id = 12345;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 8.31,
+        "root_node": "Index Scan",
+        "plan": {
+          "Node Type": "Index Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "products_pkey",
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.29,
+          "Total Cost": 8.31,
+          "Plan Rows": 1,
+          "Plan Width": 32,
+          "Index Cond": "(id = 12345)"
+        },
+        "plan_summary": {
+          "root_node": "Index Scan",
+          "root_strategy": "index_scan",
+          "scan_strategies": [
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "products_pkey",
+              "estimated_cost": 8.31,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 8.31,
+          "estimated_rows": 1,
+          "index_names": [
+            "products_pkey"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q019",
+      "category": "existing_date_index",
+      "sql": "SELECT id, user_id, event_type FROM events WHERE occurred_at >= '2026-09-01' AND occurred_at < '2026-09-02';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 14808.64,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "events",
+          "Alias": "events",
+          "Startup Cost": 129.03,
+          "Total Cost": 14808.64,
+          "Plan Rows": 5131,
+          "Plan Width": 25,
+          "Recheck Cond": "((occurred_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (occurred_at < '2026-09-02 00:00:00+00'::timestamp with time zone))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "events_occurred_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 127.74,
+              "Plan Rows": 5131,
+              "Plan Width": 0,
+              "Index Cond": "((occurred_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (occurred_at < '2026-09-02 00:00:00+00'::timestamp with time zone))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 14808.64,
+              "estimated_rows": 5131
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "events_occurred_at_idx",
+              "estimated_cost": 127.74,
+              "estimated_rows": 5131
+            }
+          ],
+          "total_cost": 14808.64,
+          "estimated_rows": 5131,
+          "index_names": [
+            "events_occurred_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q020",
+      "category": "low_selectivity",
+      "sql": "SELECT * FROM orders WHERE total_amount > 1;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 43108.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 0.0,
+          "Total Cost": 43108.0,
+          "Plan Rows": 1999800,
+          "Plan Width": 39,
+          "Filter": "(total_amount > '1'::numeric)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 43108.0,
+              "estimated_rows": 1999800
+            }
+          ],
+          "total_cost": 43108.0,
+          "estimated_rows": 1999800,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q021",
+      "category": "join_missing_fk_index",
+      "sql": "SELECT o.id, oi.product_id, oi.quantity FROM orders AS o JOIN order_items AS oi ON oi.order_id = o.id WHERE o.created_at >= '2026-09-01';",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "order_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 103256.45,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 20988.76,
+          "Total Cost": 103256.45,
+          "Plan Rows": 142608,
+          "Plan Width": 20,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Hash Join",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Join Type": "Inner",
+              "Startup Cost": 19988.76,
+              "Total Cost": 87995.65,
+              "Plan Rows": 59420,
+              "Plan Width": 20,
+              "Inner Unique": true,
+              "Hash Cond": "(oi.order_id = o.id)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "order_items",
+                  "Alias": "oi",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 62538.38,
+                  "Plan Rows": 2083238,
+                  "Plan Width": 20
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Startup Cost": 19691.65,
+                  "Total Cost": 19691.65,
+                  "Plan Rows": 23769,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Heap Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "orders",
+                      "Alias": "o",
+                      "Startup Cost": 1286.53,
+                      "Total Cost": 19691.65,
+                      "Plan Rows": 23769,
+                      "Plan Width": 8,
+                      "Recheck Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)",
+                      "Plans": [
+                        {
+                          "Node Type": "Bitmap Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Index Name": "orders_created_at_idx",
+                          "Startup Cost": 0.0,
+                          "Total Cost": 1272.27,
+                          "Plan Rows": 57046,
+                          "Plan Width": 0,
+                          "Index Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 62538.38,
+              "estimated_rows": 2083238
+            },
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 19691.65,
+              "estimated_rows": 23769
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 1272.27,
+              "estimated_rows": 57046
+            }
+          ],
+          "total_cost": 103256.45,
+          "estimated_rows": 142608,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "table": "order_items",
+        "columns": [
+          "order_id"
+        ],
+        "status": "compared",
+        "reason": "Plans compared, but the exact proposed hypothetical index was not selected.",
+        "estimated_cost": 103256.45,
+        "root_node": "Gather",
+        "hypothetical_index_name": "<13625>btree_order_items_order_id",
+        "index_used": false,
+        "baseline_cost_from_comparison": 103256.45,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 20988.76,
+          "Total Cost": 103256.45,
+          "Plan Rows": 142608,
+          "Plan Width": 20,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Hash Join",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Join Type": "Inner",
+              "Startup Cost": 19988.76,
+              "Total Cost": 87995.65,
+              "Plan Rows": 59420,
+              "Plan Width": 20,
+              "Inner Unique": true,
+              "Hash Cond": "(oi.order_id = o.id)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "order_items",
+                  "Alias": "oi",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 62538.38,
+                  "Plan Rows": 2083238,
+                  "Plan Width": 20
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Startup Cost": 19691.65,
+                  "Total Cost": 19691.65,
+                  "Plan Rows": 23769,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Heap Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "orders",
+                      "Alias": "o",
+                      "Startup Cost": 1286.53,
+                      "Total Cost": 19691.65,
+                      "Plan Rows": 23769,
+                      "Plan Width": 8,
+                      "Recheck Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)",
+                      "Plans": [
+                        {
+                          "Node Type": "Bitmap Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Index Name": "orders_created_at_idx",
+                          "Startup Cost": 0.0,
+                          "Total Cost": 1272.27,
+                          "Plan Rows": 57046,
+                          "Plan Width": 0,
+                          "Index Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 20988.76,
+          "Total Cost": 103256.45,
+          "Plan Rows": 142608,
+          "Plan Width": 20,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Hash Join",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Join Type": "Inner",
+              "Startup Cost": 19988.76,
+              "Total Cost": 87995.65,
+              "Plan Rows": 59420,
+              "Plan Width": 20,
+              "Inner Unique": true,
+              "Hash Cond": "(oi.order_id = o.id)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "order_items",
+                  "Alias": "oi",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 62538.38,
+                  "Plan Rows": 2083238,
+                  "Plan Width": 20
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Startup Cost": 19691.65,
+                  "Total Cost": 19691.65,
+                  "Plan Rows": 23769,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Heap Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "orders",
+                      "Alias": "o",
+                      "Startup Cost": 1286.53,
+                      "Total Cost": 19691.65,
+                      "Plan Rows": 23769,
+                      "Plan Width": 8,
+                      "Recheck Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)",
+                      "Plans": [
+                        {
+                          "Node Type": "Bitmap Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Index Name": "orders_created_at_idx",
+                          "Startup Cost": 0.0,
+                          "Total Cost": 1272.27,
+                          "Plan Rows": 57046,
+                          "Plan Width": 0,
+                          "Index Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 62538.38,
+              "estimated_rows": 2083238
+            },
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 19691.65,
+              "estimated_rows": 23769
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 1272.27,
+              "estimated_rows": 57046
+            }
+          ],
+          "total_cost": 103256.45,
+          "estimated_rows": 142608,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        },
+        "candidate_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 62538.38,
+              "estimated_rows": 2083238
+            },
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 19691.65,
+              "estimated_rows": 23769
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 1272.27,
+              "estimated_rows": 57046
+            }
+          ],
+          "total_cost": 103256.45,
+          "estimated_rows": 142608,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        }
+      },
+      "decision": {
+        "status": "reject",
+        "reason": "PostgreSQL did not select the proposed hypothetical index.",
+        "explanation": "PostgreSQL did not choose the proposed index in the candidate plan. The index therefore fails the current verification policy, regardless of the cost estimate.",
+        "estimated_cost_improvement_percent": 0.0
+      },
+      "label_comparison": "disagrees_with_expected_action"
+    },
+    {
+      "query_id": "Q022",
+      "category": "join",
+      "sql": "SELECT p.category, COUNT(*) FROM order_items AS oi JOIN products AS p ON p.id = oi.product_id WHERE p.category = 'electronics' GROUP BY p.category;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 31761.19,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Sorted",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1164.97,
+          "Total Cost": 31761.19,
+          "Plan Rows": 1,
+          "Plan Width": 15,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 1164.97,
+              "Total Cost": 31761.18,
+              "Plan Rows": 1,
+              "Plan Width": 15,
+              "Workers Planned": 1,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Sorted",
+                  "Partial Mode": "Partial",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 164.97,
+                  "Total Cost": 30761.08,
+                  "Plan Rows": 1,
+                  "Plan Width": 15,
+                  "Plans": [
+                    {
+                      "Node Type": "Nested Loop",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Join Type": "Inner",
+                      "Startup Cost": 164.97,
+                      "Total Cost": 29696.19,
+                      "Plan Rows": 425951,
+                      "Plan Width": 7,
+                      "Inner Unique": false,
+                      "Plans": [
+                        {
+                          "Node Type": "Bitmap Heap Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": true,
+                          "Async Capable": false,
+                          "Relation Name": "products",
+                          "Alias": "p",
+                          "Startup Cost": 164.54,
+                          "Total Cost": 1335.03,
+                          "Plan Rows": 8519,
+                          "Plan Width": 15,
+                          "Recheck Cond": "(category = 'electronics'::text)",
+                          "Plans": [
+                            {
+                              "Node Type": "Bitmap Index Scan",
+                              "Parent Relationship": "Outer",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Index Name": "products_category_idx",
+                              "Startup Cost": 0.0,
+                              "Total Cost": 160.91,
+                              "Plan Rows": 14483,
+                              "Plan Width": 0,
+                              "Index Cond": "(category = 'electronics'::text)"
+                            }
+                          ]
+                        },
+                        {
+                          "Node Type": "Index Only Scan",
+                          "Parent Relationship": "Inner",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Scan Direction": "Forward",
+                          "Index Name": "order_items_product_id_idx",
+                          "Relation Name": "order_items",
+                          "Alias": "oi",
+                          "Startup Cost": 0.43,
+                          "Total Cost": 2.82,
+                          "Plan Rows": 51,
+                          "Plan Width": 8,
+                          "Index Cond": "(product_id = p.id)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan",
+            "index_only_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 1335.03,
+              "estimated_rows": 8519
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "products_category_idx",
+              "estimated_cost": 160.91,
+              "estimated_rows": 14483
+            },
+            {
+              "node_type": "Index Only Scan",
+              "strategy": "index_only_scan",
+              "index_name": "order_items_product_id_idx",
+              "estimated_cost": 2.82,
+              "estimated_rows": 51
+            }
+          ],
+          "total_cost": 31761.19,
+          "estimated_rows": 1,
+          "index_names": [
+            "order_items_product_id_idx",
+            "products_category_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q023",
+      "category": "composite_index",
+      "sql": "SELECT * FROM orders WHERE status = 'shipped' AND created_at >= '2026-09-01' AND created_at < '2026-10-01';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 15413.23,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 322.98,
+          "Total Cost": 15413.23,
+          "Plan Rows": 8671,
+          "Plan Width": 39,
+          "Recheck Cond": "((status = 'shipped'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+00'::timestamp with time zone))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_status_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 320.81,
+              "Plan Rows": 8671,
+              "Plan Width": 0,
+              "Index Cond": "((status = 'shipped'::text) AND (created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+00'::timestamp with time zone))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 15413.23,
+              "estimated_rows": 8671
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 320.81,
+              "estimated_rows": 8671
+            }
+          ],
+          "total_cost": 15413.23,
+          "estimated_rows": 8671,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q024",
+      "category": "sort_limit",
+      "sql": "SELECT id, user_id, total_amount FROM orders ORDER BY created_at DESC LIMIT 100;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 7.03,
+        "root_node": "Limit",
+        "plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 0.43,
+          "Total Cost": 7.03,
+          "Plan Rows": 100,
+          "Plan Width": 30,
+          "Plans": [
+            {
+              "Node Type": "Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Backward",
+              "Index Name": "orders_created_at_idx",
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.43,
+              "Total Cost": 131992.4,
+              "Plan Rows": 2000000,
+              "Plan Width": 30
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Limit",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 131992.4,
+              "estimated_rows": 2000000
+            }
+          ],
+          "total_cost": 7.03,
+          "estimated_rows": 100,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q025",
+      "category": "composite_missing_index",
+      "sql": "SELECT * FROM orders WHERE status = 'cancelled' AND total_amount > 1000;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "status",
+        "total_amount"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 22830.5,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 3214.51,
+          "Total Cost": 22830.5,
+          "Plan Rows": 80332,
+          "Plan Width": 39,
+          "Recheck Cond": "(status = 'cancelled'::text)",
+          "Filter": "(total_amount > '1000'::numeric)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_status_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 3194.42,
+              "Plan Rows": 100533,
+              "Plan Width": 0,
+              "Index Cond": "(status = 'cancelled'::text)"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 22830.5,
+              "estimated_rows": 80332
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 3194.42,
+              "estimated_rows": 100533
+            }
+          ],
+          "total_cost": 22830.5,
+          "estimated_rows": 80332,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "table": "orders",
+        "columns": [
+          "status",
+          "total_amount"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 21676.44,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_orders_status_total_amount",
+        "index_used": true,
+        "baseline_cost_from_comparison": 22830.5,
+        "baseline_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 3214.51,
+          "Total Cost": 22830.5,
+          "Plan Rows": 80332,
+          "Plan Width": 39,
+          "Recheck Cond": "(status = 'cancelled'::text)",
+          "Filter": "(total_amount > '1000'::numeric)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "orders_status_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 3194.42,
+              "Plan Rows": 100533,
+              "Plan Width": 0,
+              "Index Cond": "(status = 'cancelled'::text)"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 2363.46,
+          "Total Cost": 21676.44,
+          "Plan Rows": 80332,
+          "Plan Width": 39,
+          "Recheck Cond": "((status = 'cancelled'::text) AND (total_amount > '1000'::numeric))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_orders_status_total_amount",
+              "Startup Cost": 0.0,
+              "Total Cost": 2343.37,
+              "Plan Rows": 80332,
+              "Plan Width": 0,
+              "Index Cond": "((status = 'cancelled'::text) AND (total_amount > '1000'::numeric))"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 22830.5,
+              "estimated_rows": 80332
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 3194.42,
+              "estimated_rows": 100533
+            }
+          ],
+          "total_cost": 22830.5,
+          "estimated_rows": 80332,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 21676.44,
+              "estimated_rows": 80332
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_orders_status_total_amount",
+              "estimated_cost": 2343.37,
+              "estimated_rows": 80332
+            }
+          ],
+          "total_cost": 21676.44,
+          "estimated_rows": 80332,
+          "index_names": [
+            "<13625>btree_orders_status_total_amount"
+          ]
+        }
+      },
+      "decision": {
+        "status": "inconclusive",
+        "reason": "Estimated improvement is below the configured threshold.",
+        "explanation": "The candidate index was selected and estimated planner cost improved by 5.05%, but the configured minimum is 10.00%. The evidence is insufficient for acceptance under the current policy.",
+        "estimated_cost_improvement_percent": 5.054904623201425
+      },
+      "label_comparison": "inconclusive"
+    },
+    {
+      "query_id": "Q026",
+      "category": "multi_predicate",
+      "sql": "SELECT id, email FROM users WHERE country = 'IN' AND is_active = true;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "country",
+        "is_active"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 10946.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 0.0,
+          "Total Cost": 10946.0,
+          "Plan Rows": 161121,
+          "Plan Width": 30,
+          "Filter": "(is_active AND (country = 'IN'::text))"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 10946.0,
+              "estimated_rows": 161121
+            }
+          ],
+          "total_cost": 10946.0,
+          "estimated_rows": 161121,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "users",
+        "columns": [
+          "country",
+          "is_active"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 10189.55,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_users_country_is_active",
+        "index_used": true,
+        "baseline_cost_from_comparison": 10946.0,
+        "baseline_plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 0.0,
+          "Total Cost": 10946.0,
+          "Plan Rows": 161121,
+          "Plan Width": 30,
+          "Filter": "(is_active AND (country = 'IN'::text))"
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 3479.54,
+          "Total Cost": 10189.55,
+          "Plan Rows": 161121,
+          "Plan Width": 30,
+          "Recheck Cond": "((country = 'IN'::text) AND is_active)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_users_country_is_active",
+              "Startup Cost": 0.0,
+              "Total Cost": 3439.26,
+              "Plan Rows": 161121,
+              "Plan Width": 0,
+              "Index Cond": "((country = 'IN'::text) AND (is_active = true))"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 10946.0,
+              "estimated_rows": 161121
+            }
+          ],
+          "total_cost": 10946.0,
+          "estimated_rows": 161121,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 10189.55,
+              "estimated_rows": 161121
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_users_country_is_active",
+              "estimated_cost": 3439.26,
+              "estimated_rows": 161121
+            }
+          ],
+          "total_cost": 10189.55,
+          "estimated_rows": 161121,
+          "index_names": [
+            "<13625>btree_users_country_is_active"
+          ]
+        }
+      },
+      "decision": {
+        "status": "inconclusive",
+        "reason": "Estimated improvement is below the configured threshold.",
+        "explanation": "The candidate index was selected and estimated planner cost improved by 6.91%, but the configured minimum is 10.00%. The evidence is insufficient for acceptance under the current policy.",
+        "estimated_cost_improvement_percent": 6.910743650648646
+      },
+      "label_comparison": "inconclusive"
+    },
+    {
+      "query_id": "Q027",
+      "category": "composite_candidate",
+      "sql": "SELECT id, user_id, status FROM orders WHERE user_id = 12345 AND status = 'completed';",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "user_id",
+        "status"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 31608.3,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 31608.3,
+          "Plan Rows": 3,
+          "Plan Width": 25,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 30608.0,
+              "Plan Rows": 1,
+              "Plan Width": 25,
+              "Filter": "((user_id = 12345) AND (status = 'completed'::text))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 30608.0,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 31608.3,
+          "estimated_rows": 3,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "orders",
+        "columns": [
+          "user_id",
+          "status"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 16.11,
+        "root_node": "Index Scan",
+        "hypothetical_index_name": "<13625>btree_orders_user_id_status",
+        "index_used": true,
+        "baseline_cost_from_comparison": 31608.3,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 31608.3,
+          "Plan Rows": 3,
+          "Plan Width": 25,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 30608.0,
+              "Plan Rows": 1,
+              "Plan Width": 25,
+              "Filter": "((user_id = 12345) AND (status = 'completed'::text))"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Index Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "<13625>btree_orders_user_id_status",
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 0.05,
+          "Total Cost": 16.11,
+          "Plan Rows": 3,
+          "Plan Width": 25,
+          "Index Cond": "((user_id = 12345) AND (status = 'completed'::text))"
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 30608.0,
+              "estimated_rows": 1
+            }
+          ],
+          "total_cost": 31608.3,
+          "estimated_rows": 3,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Index Scan",
+          "root_strategy": "index_scan",
+          "scan_strategies": [
+            "index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "<13625>btree_orders_user_id_status",
+              "estimated_cost": 16.11,
+              "estimated_rows": 3
+            }
+          ],
+          "total_cost": 16.11,
+          "estimated_rows": 3,
+          "index_names": [
+            "<13625>btree_orders_user_id_status"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 99.95%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 99.94903237440799
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q028",
+      "category": "aggregation_filter",
+      "sql": "SELECT status, COUNT(*) FROM orders WHERE created_at >= '2026-09-01' GROUP BY status;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 20392.9,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Hashed",
+          "Partial Mode": "Simple",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 20392.84,
+          "Total Cost": 20392.9,
+          "Plan Rows": 6,
+          "Plan Width": 17,
+          "Group Key": [
+            "status"
+          ],
+          "Planned Partitions": 0,
+          "Plans": [
+            {
+              "Node Type": "Bitmap Heap Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 1286.53,
+              "Total Cost": 20107.61,
+              "Plan Rows": 57046,
+              "Plan Width": 9,
+              "Recheck Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)",
+              "Plans": [
+                {
+                  "Node Type": "Bitmap Index Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Index Name": "orders_created_at_idx",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 1272.27,
+                  "Plan Rows": 57046,
+                  "Plan Width": 0,
+                  "Index Cond": "(created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone)"
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 20107.61,
+              "estimated_rows": 57046
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_created_at_idx",
+              "estimated_cost": 1272.27,
+              "estimated_rows": 57046
+            }
+          ],
+          "total_cost": 20392.9,
+          "estimated_rows": 6,
+          "index_names": [
+            "orders_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q029",
+      "category": "existing_primary_key_join",
+      "sql": "SELECT o.id, u.email FROM orders AS o JOIN users AS u ON u.id = o.user_id WHERE u.id = 12345;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 29533.66,
+        "root_node": "Nested Loop",
+        "plan": {
+          "Node Type": "Nested Loop",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 1000.42,
+          "Total Cost": 29533.66,
+          "Plan Rows": 5,
+          "Plan Width": 30,
+          "Inner Unique": false,
+          "Plans": [
+            {
+              "Node Type": "Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Forward",
+              "Index Name": "users_pkey",
+              "Relation Name": "users",
+              "Alias": "u",
+              "Startup Cost": 0.42,
+              "Total Cost": 8.44,
+              "Plan Rows": 1,
+              "Plan Width": 30,
+              "Index Cond": "(id = 12345)"
+            },
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 1000.0,
+              "Total Cost": 29525.17,
+              "Plan Rows": 5,
+              "Plan Width": 16,
+              "Workers Planned": 2,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Async Capable": false,
+                  "Relation Name": "orders",
+                  "Alias": "o",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 28524.67,
+                  "Plan Rows": 2,
+                  "Plan Width": 16,
+                  "Filter": "(user_id = 12345)"
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Nested Loop",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_scan",
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Scan",
+              "strategy": "index_scan",
+              "index_name": "users_pkey",
+              "estimated_cost": 8.44,
+              "estimated_rows": 1
+            },
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 28524.67,
+              "estimated_rows": 2
+            }
+          ],
+          "total_cost": 29533.66,
+          "estimated_rows": 5,
+          "index_names": [
+            "users_pkey"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q030",
+      "category": "full_scan_expected",
+      "sql": "SELECT COUNT(*) FROM events;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 67956.57,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 67956.56,
+          "Total Cost": 67956.57,
+          "Plan Rows": 1,
+          "Plan Width": 8,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 67956.34,
+              "Total Cost": 67956.55,
+              "Plan Rows": 2,
+              "Plan Width": 8,
+              "Workers Planned": 2,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Partial",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 66956.34,
+                  "Total Cost": 66956.35,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Only Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "events_event_type_idx",
+                      "Relation Name": "events",
+                      "Alias": "events",
+                      "Startup Cost": 0.43,
+                      "Total Cost": 61748.26,
+                      "Plan Rows": 2083231,
+                      "Plan Width": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "index_only_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Index Only Scan",
+              "strategy": "index_only_scan",
+              "index_name": "events_event_type_idx",
+              "estimated_cost": 61748.26,
+              "estimated_rows": 2083231
+            }
+          ],
+          "total_cost": 67956.57,
+          "estimated_rows": 1,
+          "index_names": [
+            "events_event_type_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q031",
+      "category": "function_on_column",
+      "sql": "SELECT COUNT(*) FROM events WHERE DATE(occurred_at) = '2026-09-15';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": true,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 76794.73,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 76794.72,
+          "Total Cost": 76794.73,
+          "Plan Rows": 1,
+          "Plan Width": 8,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 76794.51,
+              "Total Cost": 76794.72,
+              "Plan Rows": 2,
+              "Plan Width": 8,
+              "Workers Planned": 2,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Partial",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 75794.51,
+                  "Total Cost": 75794.52,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "events",
+                      "Alias": "events",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 75768.47,
+                      "Plan Rows": 10416,
+                      "Plan Width": 0,
+                      "Filter": "(date(occurred_at) = '2026-09-15'::date)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 75768.47,
+              "estimated_rows": 10416
+            }
+          ],
+          "total_cost": 76794.73,
+          "estimated_rows": 1,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q032",
+      "category": "leading_wildcard_like",
+      "sql": "SELECT id, name FROM products WHERE name LIKE '%laptop%';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 2314.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 15152,
+          "Plan Width": 26,
+          "Filter": "(name ~~ '%laptop%'::text)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 15152
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 15152,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q033",
+      "category": "prefix_like",
+      "sql": "SELECT id, name FROM products WHERE name LIKE 'laptop%';",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "name"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 2314.0,
+        "root_node": "Seq Scan",
+        "plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 15152,
+          "Plan Width": 26,
+          "Filter": "(name ~~ 'laptop%'::text)"
+        },
+        "plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 15152
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 15152,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "products",
+        "columns": [
+          "name"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 1717.98,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_products_name",
+        "index_used": true,
+        "baseline_cost_from_comparison": 2314.0,
+        "baseline_plan": {
+          "Node Type": "Seq Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 0.0,
+          "Total Cost": 2314.0,
+          "Plan Rows": 15152,
+          "Plan Width": 26,
+          "Filter": "(name ~~ 'laptop%'::text)"
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 468.34,
+          "Total Cost": 1717.98,
+          "Plan Rows": 15152,
+          "Plan Width": 26,
+          "Filter": "(name ~~ 'laptop%'::text)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_products_name",
+              "Startup Cost": 0.0,
+              "Total Cost": 464.55,
+              "Plan Rows": 14851,
+              "Plan Width": 0,
+              "Index Cond": "((name ~>=~ 'laptop'::text) AND (name ~<~ 'laptoq'::text))"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 2314.0,
+              "estimated_rows": 15152
+            }
+          ],
+          "total_cost": 2314.0,
+          "estimated_rows": 15152,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 1717.98,
+              "estimated_rows": 15152
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_products_name",
+              "estimated_cost": 464.55,
+              "estimated_rows": 14851
+            }
+          ],
+          "total_cost": 1717.98,
+          "estimated_rows": 15152,
+          "index_names": [
+            "<13625>btree_products_name"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 25.76%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 25.757130509939497
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q034",
+      "category": "or_predicate",
+      "sql": "SELECT * FROM orders WHERE status = 'cancelled' OR status = 'returned';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 27480.06,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "orders",
+          "Alias": "orders",
+          "Startup Cost": 6397.06,
+          "Total Cost": 27480.06,
+          "Plan Rows": 193417,
+          "Plan Width": 39,
+          "Recheck Cond": "((status = 'cancelled'::text) OR (status = 'returned'::text))",
+          "Plans": [
+            {
+              "Node Type": "BitmapOr",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 6397.06,
+              "Total Cost": 6397.06,
+              "Plan Rows": 198333,
+              "Plan Width": 0,
+              "Plans": [
+                {
+                  "Node Type": "Bitmap Index Scan",
+                  "Parent Relationship": "Member",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Index Name": "orders_status_created_at_idx",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 3194.42,
+                  "Plan Rows": 100533,
+                  "Plan Width": 0,
+                  "Index Cond": "(status = 'cancelled'::text)"
+                },
+                {
+                  "Node Type": "Bitmap Index Scan",
+                  "Parent Relationship": "Member",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Index Name": "orders_status_created_at_idx",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 3105.93,
+                  "Plan Rows": 97800,
+                  "Plan Width": 0,
+                  "Index Cond": "(status = 'returned'::text)"
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 27480.06,
+              "estimated_rows": 193417
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 3194.42,
+              "estimated_rows": 100533
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "orders_status_created_at_idx",
+              "estimated_cost": 3105.93,
+              "estimated_rows": 97800
+            }
+          ],
+          "total_cost": 27480.06,
+          "estimated_rows": 193417,
+          "index_names": [
+            "orders_status_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q035",
+      "category": "foreign_key_join",
+      "sql": "SELECT e.id, e.event_type FROM events AS e JOIN users AS u ON u.id = e.user_id WHERE u.country = 'IN';",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "user_id"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 190497.43,
+        "root_node": "Hash Join",
+        "plan": {
+          "Node Type": "Hash Join",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 13814.41,
+          "Total Cost": 190497.43,
+          "Plan Rows": 1748244,
+          "Plan Width": 17,
+          "Inner Unique": true,
+          "Hash Cond": "(e.user_id = u.id)",
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "events",
+              "Alias": "e",
+              "Startup Cost": 0.0,
+              "Total Cost": 94517.55,
+              "Plan Rows": 4999755,
+              "Plan Width": 25
+            },
+            {
+              "Node Type": "Hash",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 10946.0,
+              "Total Cost": 10946.0,
+              "Plan Rows": 174833,
+              "Plan Width": 8,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "users",
+                  "Alias": "u",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 10946.0,
+                  "Plan Rows": 174833,
+                  "Plan Width": 8,
+                  "Filter": "(country = 'IN'::text)"
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Hash Join",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 94517.55,
+              "estimated_rows": 4999755
+            },
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 10946.0,
+              "estimated_rows": 174833
+            }
+          ],
+          "total_cost": 190497.43,
+          "estimated_rows": 1748244,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "events",
+        "columns": [
+          "user_id"
+        ],
+        "status": "compared",
+        "reason": "Plans compared, but the exact proposed hypothetical index was not selected.",
+        "estimated_cost": 190497.43,
+        "root_node": "Hash Join",
+        "hypothetical_index_name": "<13625>btree_events_user_id",
+        "index_used": false,
+        "baseline_cost_from_comparison": 190497.43,
+        "baseline_plan": {
+          "Node Type": "Hash Join",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 13814.41,
+          "Total Cost": 190497.43,
+          "Plan Rows": 1748244,
+          "Plan Width": 17,
+          "Inner Unique": true,
+          "Hash Cond": "(e.user_id = u.id)",
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "events",
+              "Alias": "e",
+              "Startup Cost": 0.0,
+              "Total Cost": 94517.55,
+              "Plan Rows": 4999755,
+              "Plan Width": 25
+            },
+            {
+              "Node Type": "Hash",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 10946.0,
+              "Total Cost": 10946.0,
+              "Plan Rows": 174833,
+              "Plan Width": 8,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "users",
+                  "Alias": "u",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 10946.0,
+                  "Plan Rows": 174833,
+                  "Plan Width": 8,
+                  "Filter": "(country = 'IN'::text)"
+                }
+              ]
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Hash Join",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 13814.41,
+          "Total Cost": 190497.43,
+          "Plan Rows": 1748244,
+          "Plan Width": 17,
+          "Inner Unique": true,
+          "Hash Cond": "(e.user_id = u.id)",
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "events",
+              "Alias": "e",
+              "Startup Cost": 0.0,
+              "Total Cost": 94517.55,
+              "Plan Rows": 4999755,
+              "Plan Width": 25
+            },
+            {
+              "Node Type": "Hash",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 10946.0,
+              "Total Cost": 10946.0,
+              "Plan Rows": 174833,
+              "Plan Width": 8,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "users",
+                  "Alias": "u",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 10946.0,
+                  "Plan Rows": 174833,
+                  "Plan Width": 8,
+                  "Filter": "(country = 'IN'::text)"
+                }
+              ]
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Hash Join",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 94517.55,
+              "estimated_rows": 4999755
+            },
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 10946.0,
+              "estimated_rows": 174833
+            }
+          ],
+          "total_cost": 190497.43,
+          "estimated_rows": 1748244,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Hash Join",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 94517.55,
+              "estimated_rows": 4999755
+            },
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 10946.0,
+              "estimated_rows": 174833
+            }
+          ],
+          "total_cost": 190497.43,
+          "estimated_rows": 1748244,
+          "index_names": []
+        }
+      },
+      "decision": {
+        "status": "reject",
+        "reason": "PostgreSQL did not select the proposed hypothetical index.",
+        "explanation": "PostgreSQL did not choose the proposed index in the candidate plan. The index therefore fails the current verification policy, regardless of the cost estimate.",
+        "estimated_cost_improvement_percent": 0.0
+      },
+      "label_comparison": "disagrees_with_expected_action"
+    },
+    {
+      "query_id": "Q036",
+      "category": "existing_index_control",
+      "sql": "SELECT * FROM products WHERE created_at >= '2026-09-01' AND created_at < '2026-10-01';",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 1181.49,
+        "root_node": "Bitmap Heap Scan",
+        "plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "products",
+          "Alias": "products",
+          "Startup Cost": 74.01,
+          "Total Cost": 1181.49,
+          "Plan Rows": 2899,
+          "Plan Width": 51,
+          "Recheck Cond": "((created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+00'::timestamp with time zone))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "products_created_at_idx",
+              "Startup Cost": 0.0,
+              "Total Cost": 73.28,
+              "Plan Rows": 2899,
+              "Plan Width": 0,
+              "Index Cond": "((created_at >= '2026-09-01 00:00:00+00'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+00'::timestamp with time zone))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 1181.49,
+              "estimated_rows": 2899
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "products_created_at_idx",
+              "estimated_cost": 73.28,
+              "estimated_rows": 2899
+            }
+          ],
+          "total_cost": 1181.49,
+          "estimated_rows": 2899,
+          "index_names": [
+            "products_created_at_idx"
+          ]
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q037",
+      "category": "low_selectivity",
+      "sql": "SELECT COUNT(*) FROM users WHERE country IS NOT NULL;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 8300.39,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 8300.38,
+          "Total Cost": 8300.39,
+          "Plan Rows": 1,
+          "Plan Width": 8,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 8300.17,
+              "Total Cost": 8300.38,
+              "Plan Rows": 2,
+              "Plan Width": 8,
+              "Workers Planned": 2,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Partial",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 7300.17,
+                  "Total Cost": 7300.18,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "users",
+                      "Alias": "users",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 6779.33,
+                      "Plan Rows": 208333,
+                      "Plan Width": 0,
+                      "Filter": "(country IS NOT NULL)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 6779.33,
+              "estimated_rows": 208333
+            }
+          ],
+          "total_cost": 8300.39,
+          "estimated_rows": 1,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q038",
+      "category": "aggregation",
+      "sql": "SELECT product_id, SUM(quantity) FROM order_items GROUP BY product_id;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 251067.67,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Sorted",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 226386.35,
+          "Total Cost": 251067.67,
+          "Plan Rows": 97420,
+          "Plan Width": 16,
+          "Group Key": [
+            "product_id"
+          ],
+          "Plans": [
+            {
+              "Node Type": "Gather Merge",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 226386.35,
+              "Total Cost": 249119.27,
+              "Plan Rows": 194840,
+              "Plan Width": 16,
+              "Workers Planned": 2,
+              "Plans": [
+                {
+                  "Node Type": "Sort",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 225386.32,
+                  "Total Cost": 225629.87,
+                  "Plan Rows": 97420,
+                  "Plan Width": 16,
+                  "Sort Key": [
+                    "product_id"
+                  ],
+                  "Plans": [
+                    {
+                      "Node Type": "Aggregate",
+                      "Strategy": "Hashed",
+                      "Partial Mode": "Partial",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Startup Cost": 195995.81,
+                      "Total Cost": 217314.13,
+                      "Plan Rows": 97420,
+                      "Plan Width": 16,
+                      "Group Key": [
+                        "product_id"
+                      ],
+                      "Planned Partitions": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Seq Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": true,
+                          "Async Capable": false,
+                          "Relation Name": "order_items",
+                          "Alias": "order_items",
+                          "Startup Cost": 0.0,
+                          "Total Cost": 62538.38,
+                          "Plan Rows": 2083238,
+                          "Plan Width": 12
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 62538.38,
+              "estimated_rows": 2083238
+            }
+          ],
+          "total_cost": 251067.67,
+          "estimated_rows": 97420,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    },
+    {
+      "query_id": "Q039",
+      "category": "selective_composite_filter",
+      "sql": "SELECT id, email FROM users WHERE country = 'IN' AND is_active = false;",
+      "expected_action": "CREATE_INDEX",
+      "problem_exists": true,
+      "expected_index_columns": [
+        "country",
+        "is_active"
+      ],
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 9671.47,
+        "root_node": "Gather",
+        "plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 9671.47,
+          "Plan Rows": 13713,
+          "Plan Width": 30,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "users",
+              "Alias": "users",
+              "Startup Cost": 0.0,
+              "Total Cost": 7300.17,
+              "Plan Rows": 5714,
+              "Plan Width": 30,
+              "Filter": "((NOT is_active) AND (country = 'IN'::text))"
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 7300.17,
+              "estimated_rows": 5714
+            }
+          ],
+          "total_cost": 9671.47,
+          "estimated_rows": 13713,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "table": "users",
+        "columns": [
+          "country",
+          "is_active"
+        ],
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "estimated_cost": 5164.02,
+        "root_node": "Bitmap Heap Scan",
+        "hypothetical_index_name": "<13625>btree_users_country_is_active",
+        "index_used": true,
+        "baseline_cost_from_comparison": 9671.47,
+        "baseline_plan": {
+          "Node Type": "Gather",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1000.0,
+          "Total Cost": 9671.47,
+          "Plan Rows": 13713,
+          "Plan Width": 30,
+          "Workers Planned": 2,
+          "Single Copy": false,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": true,
+              "Async Capable": false,
+              "Relation Name": "users",
+              "Alias": "users",
+              "Startup Cost": 0.0,
+              "Total Cost": 7300.17,
+              "Plan Rows": 5714,
+              "Plan Width": 30,
+              "Filter": "((NOT is_active) AND (country = 'IN'::text))"
+            }
+          ]
+        },
+        "candidate_plan": {
+          "Node Type": "Bitmap Heap Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "users",
+          "Alias": "users",
+          "Startup Cost": 296.61,
+          "Total Cost": 5164.02,
+          "Plan Rows": 13713,
+          "Plan Width": 30,
+          "Recheck Cond": "((country = 'IN'::text) AND (NOT is_active))",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "<13625>btree_users_country_is_active",
+              "Startup Cost": 0.0,
+              "Total Cost": 293.18,
+              "Plan Rows": 13713,
+              "Plan Width": 0,
+              "Index Cond": "((country = 'IN'::text) AND (is_active = false))"
+            }
+          ]
+        },
+        "baseline_plan_summary": {
+          "root_node": "Gather",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 7300.17,
+              "estimated_rows": 5714
+            }
+          ],
+          "total_cost": 9671.47,
+          "estimated_rows": 13713,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 5164.02,
+              "estimated_rows": 13713
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_users_country_is_active",
+              "estimated_cost": 293.18,
+              "estimated_rows": 13713
+            }
+          ],
+          "total_cost": 5164.02,
+          "estimated_rows": 13713,
+          "index_names": [
+            "<13625>btree_users_country_is_active"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 46.61%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 46.60563492416354
+      },
+      "label_comparison": "agrees_with_expected_action"
+    },
+    {
+      "query_id": "Q040",
+      "category": "full_scan_expected",
+      "sql": "SELECT COUNT(*) FROM order_items;",
+      "expected_action": "NO_CHANGE",
+      "problem_exists": false,
+      "expected_index_columns": null,
+      "baseline": {
+        "status": "captured",
+        "reason": "Baseline plan captured successfully.",
+        "estimated_cost": 68746.7,
+        "root_node": "Aggregate",
+        "plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Finalize",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 68746.69,
+          "Total Cost": 68746.7,
+          "Plan Rows": 1,
+          "Plan Width": 8,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 68746.47,
+              "Total Cost": 68746.68,
+              "Plan Rows": 2,
+              "Plan Width": 8,
+              "Workers Planned": 2,
+              "Single Copy": false,
+              "Plans": [
+                {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Partial",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 67746.47,
+                  "Total Cost": 67746.48,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": true,
+                      "Async Capable": false,
+                      "Relation Name": "order_items",
+                      "Alias": "order_items",
+                      "Startup Cost": 0.0,
+                      "Total Cost": 62538.38,
+                      "Plan Rows": 2083238,
+                      "Plan Width": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plan_summary": {
+          "root_node": "Aggregate",
+          "root_strategy": "other",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 62538.38,
+              "estimated_rows": 2083238
+            }
+          ],
+          "total_cost": 68746.7,
+          "estimated_rows": 1,
+          "index_names": []
+        }
+      },
+      "candidate": {
+        "status": "not_tested",
+        "reason": "No candidate is explicitly mapped for this case."
+      },
+      "decision": null,
+      "label_comparison": "not_evaluated"
+    }
+  ]
+}

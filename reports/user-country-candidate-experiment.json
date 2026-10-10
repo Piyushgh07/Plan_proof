@@ -1,0 +1,145 @@
+{
+  "results": [
+    {
+      "candidate": "country",
+      "columns": [
+        "country"
+      ],
+      "status": "compared",
+      "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+      "baseline_cost": 10946.0,
+      "candidate_cost": 5751.93,
+      "improvement_percent": 47.45176320116937,
+      "index_used": true,
+      "baseline_plan": {
+        "Node Type": "Seq Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 0.0,
+        "Total Cost": 10946.0,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Filter": "(country = 'AU'::text)"
+      },
+      "candidate_plan": {
+        "Node Type": "Bitmap Heap Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 628.84,
+        "Total Cost": 5751.93,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Recheck Cond": "(country = 'AU'::text)",
+        "Plans": [
+          {
+            "Node Type": "Bitmap Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Index Name": "<13625>btree_users_country",
+            "Startup Cost": 0.0,
+            "Total Cost": 620.3,
+            "Plan Rows": 34167,
+            "Plan Width": 0,
+            "Index Cond": "(country = 'AU'::text)"
+          }
+        ]
+      }
+    },
+    {
+      "candidate": "country_id",
+      "columns": [
+        "country",
+        "id"
+      ],
+      "status": "compared",
+      "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+      "baseline_cost": 10946.0,
+      "candidate_cost": 5947.93,
+      "improvement_percent": 45.66115475972958,
+      "index_used": true,
+      "baseline_plan": {
+        "Node Type": "Seq Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 0.0,
+        "Total Cost": 10946.0,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Filter": "(country = 'AU'::text)"
+      },
+      "candidate_plan": {
+        "Node Type": "Bitmap Heap Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 824.84,
+        "Total Cost": 5947.93,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Recheck Cond": "(country = 'AU'::text)",
+        "Plans": [
+          {
+            "Node Type": "Bitmap Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Index Name": "<13625>btree_users_country_id",
+            "Startup Cost": 0.0,
+            "Total Cost": 816.3,
+            "Plan Rows": 34167,
+            "Plan Width": 0,
+            "Index Cond": "(country = 'AU'::text)"
+          }
+        ]
+      }
+    },
+    {
+      "candidate": "country_id_email",
+      "columns": [
+        "country",
+        "id",
+        "email"
+      ],
+      "status": "compared",
+      "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+      "baseline_cost": 10946.0,
+      "candidate_cost": 1787.4,
+      "improvement_percent": 83.67074730495159,
+      "index_used": true,
+      "baseline_plan": {
+        "Node Type": "Seq Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 0.0,
+        "Total Cost": 10946.0,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Filter": "(country = 'AU'::text)"
+      },
+      "candidate_plan": {
+        "Node Type": "Index Only Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Scan Direction": "Forward",
+        "Index Name": "<13625>btree_users_country_id_email",
+        "Relation Name": "users",
+        "Alias": "users",
+        "Startup Cost": 0.05,
+        "Total Cost": 1787.4,
+        "Plan Rows": 34167,
+        "Plan Width": 30,
+        "Index Cond": "(country = 'AU'::text)"
+      }
+    }
+  ]
+}
