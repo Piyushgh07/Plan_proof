@@ -1,6 +1,6 @@
 
 """FastAPI application for Plan Proof."""
-
+import logging
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -19,7 +19,7 @@ from app.verifier.decision import decide_index
 from app.verifier.hypopg import compare_hypothetical_index
 from app.verifier.plan_analysis import summarize_plan
 
-
+logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Plan Proof",
     version="0.2.0",
@@ -105,10 +105,18 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
             detail="Operator classes must match the number of columns.",
         )
 
-    comparison = await compare_hypothetical_index(
+    try:
+        comparison = await compare_hypothetical_index(
         request.sql,
         candidate,
     )
+    except Exception:
+        logger.exception("Unexpected error during index verification.")
+        raise HTTPException(
+            status_code=503,
+            detail="Verification service temporarily unavailable.",
+    ) from None
+
     decision = decide_index(comparison)
 
     return {

@@ -145,3 +145,24 @@ def test_sandbox_failure_does_not_accept_candidate(monkeypatch):
     assert response.status_code == 200
     assert response.json()["comparison"]["status"] == "failed"
     assert response.json()["decision"]["status"] == "inconclusive"
+
+def test_unexpected_comparison_error_returns_safe_response(monkeypatch):
+    async def unexpected_failure(sql, candidate):
+        raise RuntimeError("Sensitive internal error details")
+
+    monkeypatch.setattr(
+        main, "compare_hypothetical_index", unexpected_failure
+    )
+
+    safe_client = TestClient(
+        main.app, raise_server_exceptions=False
+    )
+    response = safe_client.post(
+        "/api/v1/verify", json=valid_request()
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Verification service temporarily unavailable."
+    )
+    assert "Sensitive internal error details" not in response.text

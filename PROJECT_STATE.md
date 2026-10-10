@@ -162,3 +162,41 @@ Status: INITIAL IMPLEMENTATION VERIFIED; HARDENING REMAINS
 - [x] Corrected expected index metadata for Q011 and Q031; both use provisional `NO_CHANGE` labels.
 - [x] Confirmed PostgreSQL rejects a direct index on `DATE(timestamptz)` in the sandbox.
 - [ ] Implement and verify query-rewrite candidates for these cases.
+
+
+## Part 5 — API Verification and Error Handling
+
+Status: INITIAL IMPLEMENTATION VERIFIED; FURTHER HARDENING REQUIRED
+
+### Implemented
+- `GET /health` health endpoint.
+- `POST /api/v1/verify` index-verification endpoint.
+- Request validation using Pydantic.
+- SELECT-only SQL validation and rejection of multiple statements.
+- Rejection of unresolved SQL parameters.
+- Explicit table and column allowlists for index candidates.
+- Hypothetical-index comparison using HypoPG in the sandbox.
+- Conservative accept, reject, and inconclusive decision outcomes.
+- Generic HTTP 503 response for unexpected comparison exceptions.
+- Internal logging of unexpected comparison exceptions.
+- API regression tests using a mocked comparison.
+
+### Verification
+- Useful hypothetical-index candidate accepted in a live API smoke test.
+- Unselected hypothetical-index candidate rejected in a live API smoke test.
+- Invalid SQL, unresolved parameters, unsupported columns, and multiple statements rejected.
+- Failed comparison result produces an inconclusive decision.
+- Unexpected comparison exception produces a generic HTTP 503 response.
+- Latest automated test suite: 78 passed.
+
+### Remaining Work
+- Test real database connection failures.
+- Verify HypoPG cleanup and connection behavior under failure conditions.
+- Expand API integration tests.
+- Review query-planning side effects and resource limits.
+- Document and benchmark actual query execution times separately from planner costs.
+
+### Limitations
+- Planner cost improvement is not measured runtime improvement.
+- Hypothetical indexes are not permanent indexes.
+- Passing tests do not establish production readiness.
