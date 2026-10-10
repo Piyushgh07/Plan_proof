@@ -200,3 +200,24 @@ Status: INITIAL IMPLEMENTATION VERIFIED; FURTHER HARDENING REQUIRED
 - Planner cost improvement is not measured runtime improvement.
 - Hypothetical indexes are not permanent indexes.
 - Passing tests do not establish production readiness.
+
+## Current Verified Status — October 2026
+
+### HypoPG Verifier Reliability
+- Handles unexpected sandbox connection failures and returns a failed verification result.
+- Error messages expose the exception type, not raw connection details.
+- HypoPG cleanup is tested for both successful resets and cleanup failures.
+- Failed cleanup invalidates the affected database connection.
+- Real connection-refusal behavior is covered by a test.
+
+### Verification
+- Full test suite: 79 passed.
+- HypoPG cleanup tests: 2 passed.
+- Latest test run: 79 passed in 0.56 seconds.
+- Latest relevant commit: `8a71679` — Handle real sandbox connection failures.
+- Working tree was clean immediately after that commit; subsequent test runs do not modify tracked files.
+
+### Next Steps
+1. Review the overall project state and remove outdated test counts from earlier sections.
+2. Identify the next incomplete Plan Proof milestone.
+3. Continue development with tests for every new behavior.
