@@ -114,7 +114,7 @@ Workload expected fixes are provisional until verified experimentally using Post
 
 ## Part 2 — Application Database
 
-Status: MIGRATION APPLIED; TABLE VERIFICATION PENDING
+Status: VERIFIED
 
 ### Models
 - `AnalysisRun`
@@ -126,7 +126,7 @@ Status: MIGRATION APPLIED; TABLE VERIFICATION PENDING
 - Initial revision: `0001_initial_app_schema`
 - Alembic upgrade: PASS
 - Alembic current revision: PASS
-- Table existence: Pending verification
+- Verified tables: alembic_version, analysis_runs, candidates, queries, verifications
 
 ## Part 3 — Safe Database Connections
 
@@ -149,7 +149,7 @@ Status: INITIAL IMPLEMENTATION VERIFIED; HARDENING REMAINS
 - [x] Plan capture uses a read-only transaction.
 - [x] Unresolved parameter references are rejected.
 - [x] Live plan-capture smoke test succeeded.
-- [x] Latest full test suite: 25 passed.
+- [x] Earlier milestone test suite: 25 passed; current full suite: 79 passed.
 - [x] AST-based parameter detection implemented and tested.
 - [x] Database connection failure is reported safely without leaking details.
 - [ ] Add more plan-capture and parameter edge-case tests.
@@ -187,11 +187,11 @@ Status: INITIAL IMPLEMENTATION VERIFIED; FURTHER HARDENING REQUIRED
 - Invalid SQL, unresolved parameters, unsupported columns, and multiple statements rejected.
 - Failed comparison result produces an inconclusive decision.
 - Unexpected comparison exception produces a generic HTTP 503 response.
-- Latest automated test suite: 78 passed.
+- Latest automated test suite: 79 passed.
 
 ### Remaining Work
-- Test real database connection failures.
-- Verify HypoPG cleanup and connection behavior under failure conditions.
+- Real database connection failure handling tested.
+- HypoPG cleanup and connection invalidation tested.
 - Expand API integration tests.
 - Review query-planning side effects and resource limits.
 - Document and benchmark actual query execution times separately from planner costs.
