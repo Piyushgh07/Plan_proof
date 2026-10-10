@@ -166,3 +166,31 @@ def test_unexpected_comparison_error_returns_safe_response(monkeypatch):
         "Verification service temporarily unavailable."
     )
     assert "Sensitive internal error details" not in response.text
+
+def test_live_verification_uses_real_sandbox():
+    """Exercise the API and HypoPG against the configured sandbox."""
+    response = client.post(
+        "/api/v1/verify",
+        json={
+            "sql": (
+                "SELECT * FROM orders "
+                "WHERE user_id = 12345"
+            ),
+            "table_name": "orders",
+            "columns": ["user_id"],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+
+    body = response.json()
+    assert body["query"]["validation"] == "accepted"
+    assert body["candidate"]["validation"] == "accepted"
+
+    comparison = body["comparison"]
+    assert comparison["status"] == "compared"
+    assert comparison["baseline_cost"] is not None
+    assert comparison["candidate_cost"] is not None
+    assert comparison["candidate_index_used"] is True
+
+    assert body["decision"]["status"] == "accept"
