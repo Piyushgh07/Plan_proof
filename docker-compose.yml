@@ -69,11 +69,12 @@ services:
       - "5434:5432"
     volumes:
       - sandbox_data:/var/lib/postgresql/data
-      - ./docker/sandbox/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./docker/sandbox/init.sql:/docker-entrypoint-initdb.d/00-hypopg.sql:ro
+      - ./docker/benchmark/schema.sql:/docker-entrypoint-initdb.d/10-benchmark-schema.sql:ro
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U sandbox_admin -d sandbox_db
+        - pg_isready -U ${SANDBOX_USER:-sandbox_admin} -d sandbox_db
       interval: 5s
       timeout: 5s
       retries: 10

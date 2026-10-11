@@ -16,10 +16,7 @@ from app.benchmark.generator import (
     generate_user,
 )
 
-DATABASE_URL = os.getenv(
-    "SANDBOX_BENCHMARK_DATABASE_URL",
-    "postgresql://sandbox_admin:sandbox_admin_password@localhost:5434/sandbox_db",
-)
+DATABASE_URL = os.getenv("SANDBOX_BENCHMARK_DATABASE_URL")
 
 BATCH_SIZE = 10_000
 
@@ -106,6 +103,11 @@ async def load_events(connection: asyncpg.Connection) -> None:
 
 
 async def main() -> None:
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "Set SANDBOX_BENCHMARK_DATABASE_URL before loading the sandbox dataset."
+        )
+
     print("Connecting to sandbox benchmark database...")
 
     connection = await asyncpg.connect(DATABASE_URL)

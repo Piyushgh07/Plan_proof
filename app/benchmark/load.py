@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 
 import asyncpg
 
@@ -14,11 +15,7 @@ from app.benchmark.generator import (
     generate_user,
 )
 
-
-DATABASE_URL = os.getenv(
-    "BENCHMARK_DATABASE_URL",
-    "postgresql://target_admin:target_admin_password@localhost:5433/target_db",
-)
+DATABASE_URL = os.getenv("BENCHMARK_DATABASE_URL")
 
 BATCH_SIZE = 10_000
 
@@ -27,8 +24,10 @@ SCHEMA_PATH = "docker/benchmark/schema.sql"
 
 
 async def create_schema(connection: asyncpg.Connection) -> None:
-    with open(SCHEMA_PATH, encoding="utf-8") as file:
-        schema_sql = file.read()
+    schema_sql = await asyncio.to_thread(
+        Path(SCHEMA_PATH).read_text,
+        encoding="utf-8",
+    )
 
     await connection.execute(schema_sql)
 
@@ -158,6 +157,11 @@ async def load_events(connection: asyncpg.Connection) -> None:
 
 
 async def main() -> None:
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "Set BENCHMARK_DATABASE_URL before loading the target dataset."
+        )
+
     print("Connecting to benchmark database...")
 
     connection = await asyncpg.connect(DATABASE_URL)
