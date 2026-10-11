@@ -1,6 +1,7 @@
 """Compare PostgreSQL plans using HypoPG hypothetical indexes."""
 
 import json
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -75,13 +76,32 @@ def _extract_plan(raw_plan: Any) -> dict[str, Any]:
     return raw_plan[0]["Plan"]
 
 
+def _plan_total_cost(plan: dict[str, Any]) -> float:
+    """Read and validate the root node's estimated total cost."""
+    cost = plan.get("Total Cost")
+    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
+        raise TypeError("EXPLAIN root plan has no valid Total Cost.")
+    value = float(cost)
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("EXPLAIN root plan has no valid Total Cost.")
+    return value
+
+
 def _collect_index_names(plan: dict[str, Any]) -> tuple[str, ...]:
-    """Collect index names recursively from a PostgreSQL plan tree."""
+    """Collect index names from actual PostgreSQL index scan nodes."""
     names: set[str] = set()
+    index_scan_nodes = {
+        "Index Scan",
+        "Index Only Scan",
+        "Bitmap Index Scan",
+    }
 
     def visit(node: dict[str, Any]) -> None:
         index_name = node.get("Index Name")
-        if isinstance(index_name, str):
+        if (
+            node.get("Node Type") in index_scan_nodes
+            and isinstance(index_name, str)
+        ):
             names.add(index_name)
 
         children = node.get("Plans", [])
@@ -154,7 +174,7 @@ async def compare_hypothetical_index(
                 candidate_index_name = hypothetical_result.scalar_one()
 
                 if not isinstance(candidate_index_name, str):
-                    raise ValueError(
+                    raise TypeError(
                         "HypoPG did not return a valid hypothetical index name."
                     )
 
@@ -170,6 +190,8 @@ async def compare_hypothetical_index(
                     candidate_plan,
                     candidate_index_name,
                 )
+                baseline_cost = _plan_total_cost(baseline_plan)
+                candidate_cost = _plan_total_cost(candidate_plan)
 
                 result = HypoPGResult(
                     status="compared",
@@ -182,8 +204,8 @@ async def compare_hypothetical_index(
                             "hypothetical index was not selected."
                         )
                     ),
-                    baseline_cost=float(baseline_plan["Total Cost"]),
-                    candidate_cost=float(candidate_plan["Total Cost"]),
+                    baseline_cost=baseline_cost,
+                    candidate_cost=candidate_cost,
                     baseline_node_type=baseline_plan.get("Node Type"),
                     candidate_node_type=candidate_plan.get("Node Type"),
                     baseline_index_names=_collect_index_names(

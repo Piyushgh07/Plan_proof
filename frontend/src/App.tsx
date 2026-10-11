@@ -68,7 +68,7 @@ function App() {
       <aside className="sidebar">
         <Link to="/" className="brand">
           <span className="brand-mark">
-            <ShieldCheck size={20} />
+            <ShieldCheck size={24} />
           </span>
           <span>
             <b>Plan Proof</b>
@@ -88,7 +88,7 @@ function App() {
               aria-label={label}
               title={label}
             >
-              <Icon size={17} strokeWidth={1.8} />
+              <Icon size={20} strokeWidth={1.8} />
               <span>{label}</span>
               {label === "System status" && (
                 <span className={`nav-dot ${ready ? "ok" : "warn"}`} />
@@ -99,7 +99,7 @@ function App() {
         <div className="sidebar-bottom">
           <div className="safety-card">
             <span className="safety-icon">
-              <ShieldCheck size={17} />
+              <ShieldCheck size={20} />
             </span>
             <div>
               <b>Read only by design</b>
@@ -679,8 +679,11 @@ function Analyze() {
   const [result, setResult] = useState<{
     status: string;
     reason: string | null;
-    plan?: Record<string, unknown>;
+    proposal_plan?: Record<string, unknown>;
     candidates: Candidate[];
+    proposal_source?: string;
+    proposal_status?: string;
+    proposal_reason?: string | null;
   }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -711,7 +714,7 @@ function Analyze() {
       <PageHeading
         eyebrow="PLAN ANALYSIS"
         title="Analyze a query"
-        detail="Generate deterministic heuristic proposals and verify them with PostgreSQL in the sandbox."
+        detail="Generate bounded LLM or heuristic proposals, then verify each with PostgreSQL in the sandbox."
       />
       <div className="analyze-layout">
         <section className="panel editor-panel">
@@ -795,23 +798,59 @@ function Analyze() {
                 <StatusBadge value={result.status} />
                 {result.reason && <span>{result.reason}</span>}
               </div>
-              {result.plan && (
-                <PlanBlock title="Baseline plan" plan={result.plan} />
+              {result.proposal_source && (
+                <div className="notice info proposal-notice">
+                  <Sparkles size={15} />
+                  <span>
+                    Proposals came from <b>{result.proposal_source}</b>
+                    {result.proposal_reason
+                      ? ` — ${result.proposal_reason}`
+                      : "."}
+                    Each proposal is tested as a hypothetical index by HypoPG in
+                    the sandbox; Plan Proof makes the final decision from that
+                    verification.
+                  </span>
+                </div>
               )}
-              {result.candidates.map((candidate, i) => (
-                <CandidateCard
-                  key={`${candidate.table}-${i}`}
-                  candidate={candidate}
-                  onSelect={() => setSelected(candidate)}
-                  active={selected === candidate}
+              {result.proposal_plan && (
+                <PlanBlock
+                  title="Target plan used to generate proposals"
+                  plan={result.proposal_plan}
                 />
-              ))}
+              )}
+              {result.candidates.length > 0 && (
+                <section
+                  className="index-proposals"
+                  aria-labelledby="index-proposals-title"
+                >
+                  <div className="proposal-section-heading">
+                    <h3 id="index-proposals-title">Index Proposals</h3>
+                    <span>{result.candidates.length}</span>
+                    <p>
+                      The source proposes each index. HypoPG tests it in the
+                      sandbox, then Plan Proof applies the verification policy.
+                    </p>
+                  </div>
+                  <div className="candidate-list">
+                    {result.candidates.map((candidate, i) => (
+                      <CandidateCard
+                        key={candidate.table + "-" + i}
+                        candidate={candidate}
+                        onSelect={() => setSelected(candidate)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
               {result.candidates.length === 0 && (
                 <div className="empty compact">
-                  <b>No candidate to verify</b>
+                  <b>
+                    {result.status === "unsupported"
+                      ? "No supported index proposals"
+                      : "No index proposals returned"}
+                  </b>
                   <p>
-                    The query is unsupported or no eligible index pattern was
-                    found. The reason above explains why.
+                    {result.reason ?? "The analysis returned no candidates."}
                   </p>
                 </div>
               )}
@@ -850,46 +889,106 @@ function PlanBlock({
 function CandidateCard({
   candidate,
   onSelect,
-  active,
 }: {
   candidate: Candidate;
   onSelect: () => void;
-  active: boolean;
 }) {
+  const rationale = candidate.proposal_rationale?.trim();
+  const explanation =
+    candidate.decision_explanation?.trim() || candidate.reason;
+  const definition =
+    "CREATE INDEX ON " +
+    candidate.table +
+    " (" +
+    candidate.columns.join(", ") +
+    ")";
   return (
-    <button
-      className={`candidate-card ${active ? "selected" : ""}`}
-      onClick={onSelect}
-    >
-      <div className="candidate-head">
-        <div className="candidate-index">
-          <Database size={15} />
-          <span>
-            {candidate.table}
-            <small>({candidate.columns.join(", ")})</small>
+    <article className="candidate-result">
+      <section className="proposal-detail">
+        <div className="candidate-head">
+          <div className="candidate-index">
+            <Database size={15} />
+            <span>
+              {candidate.table}
+              <small>Proposed columns: {candidate.columns.join(", ")}</small>
+            </span>
+          </div>
+          <span className="source-pill">
+            {candidate.source?.toUpperCase() ?? "SOURCE NOT REPORTED"}
           </span>
         </div>
-        <StatusBadge value={candidate.decision} />
-      </div>
-      <p>{candidate.reason}</p>
-      <div className="candidate-metrics">
-        <span>
-          BASELINE <b>{formatCost(candidate.baseline_cost)}</b>
-        </span>
-        <ArrowUpRight size={14} />
-        <span>
-          CANDIDATE <b>{formatCost(candidate.candidate_cost)}</b>
-        </span>
-        {candidate.improvement_percent != null && (
-          <strong>
-            {candidate.improvement_percent.toFixed(1)}% lower estimate
-          </strong>
+        <div className="proposal-definition">
+          <span>PROPOSED INDEX DEFINITION · NOT EXECUTED</span>
+          <code>{definition}</code>
+        </div>
+        <div className="proposal-rationale">
+          <b>Proposal rationale</b>
+          <p>{rationale || "No proposal rationale was returned."}</p>
+        </div>
+      </section>
+      <section className="candidate-verification">
+        <div className="verification-heading">
+          <h4>HypoPG verification</h4>
+          <StatusBadge value={candidate.comparison_status ?? "unknown"} />
+        </div>
+        <div className="verification-metrics">
+          <span>
+            Baseline estimated cost <b>{formatCost(candidate.baseline_cost)}</b>
+          </span>
+          <span>
+            Candidate estimated cost{" "}
+            <b>{formatCost(candidate.candidate_cost)}</b>
+          </span>
+          <span>
+            Estimated improvement{" "}
+            <b>
+              {candidate.improvement_percent == null
+                ? "—"
+                : candidate.improvement_percent.toFixed(2) + "%"}
+            </b>
+          </span>
+          <span>
+            Exact hypothetical index selected{" "}
+            <b>
+              {candidate.candidate_index_used == null
+                ? "Not reported"
+                : candidate.candidate_index_used
+                  ? "Yes"
+                  : "No"}
+            </b>
+          </span>
+        </div>
+        {candidate.comparison_reason && (
+          <p className="verification-reason">{candidate.comparison_reason}</p>
         )}
-      </div>
-      <span className="verify-link">
-        Inspect verification <ChevronRight size={13} />
-      </span>
-    </button>
+        <div className="final-decision">
+          <div className="verification-heading">
+            <b>Plan Proof decision</b>
+            <StatusBadge value={candidate.decision ?? "unknown"} />
+          </div>
+          <p>{explanation || "No decision explanation was returned."}</p>
+        </div>
+        {candidate.baseline_plan && (
+          <PlanBlock
+            title="Verification baseline plan"
+            plan={candidate.baseline_plan}
+          />
+        )}
+        {candidate.candidate_plan && (
+          <PlanBlock
+            title="Verification candidate plan"
+            plan={candidate.candidate_plan}
+          />
+        )}
+        <button
+          className="verify-link verify-again"
+          type="button"
+          onClick={onSelect}
+        >
+          Run verification again <ChevronRight size={13} />
+        </button>
+      </section>
+    </article>
   );
 }
 function VerifyPanel({
@@ -1010,12 +1109,12 @@ function VerifyPanel({
               Estimated planner costs are not measured execution times.
             </p>
             <PlanBlock
-              title="Baseline plan"
-              plan={response.comparison.baseline_plan_summary ?? {}}
+              title="Verification baseline plan"
+              plan={response.comparison.baseline_plan ?? {}}
             />
             <PlanBlock
-              title="Candidate plan"
-              plan={response.comparison.candidate_plan_summary ?? {}}
+              title="Verification candidate plan"
+              plan={response.comparison.candidate_plan ?? {}}
             />
           </div>
         )}
@@ -1177,6 +1276,9 @@ function HistoryDetail() {
 }
 function CandidateHistory({ candidate }: { candidate: Candidate }) {
   const details = candidate.details ?? {};
+  const baselinePlan = details.baseline_plan as
+    | Record<string, unknown>
+    | undefined;
   const candidatePlan = details.candidate_plan as
     | Record<string, unknown>
     | undefined;
@@ -1202,6 +1304,9 @@ function CandidateHistory({ candidate }: { candidate: Candidate }) {
         </span>
         <span>{String(details.comparison_reason ?? "")}</span>
       </div>
+      {baselinePlan && (
+        <PlanBlock title="Verification baseline plan" plan={baselinePlan} />
+      )}
       {Boolean(candidatePlan) && (
         <PlanBlock title="Candidate plan" plan={candidatePlan!} />
       )}
@@ -1412,6 +1517,29 @@ function Settings() {
           </div>
         ))}
       </div>
+      <section className="panel llm-status-panel">
+        <PanelTitle
+          title="Candidate proposal provider"
+          detail="The provider proposes indexes; PostgreSQL and HypoPG determine every outcome."
+        />
+        <div className="llm-status-row">
+          <div>
+            <b>{data?.llm_provider?.provider ?? "LLM"}</b>
+            <p>
+              {data?.llm_provider?.detail ?? "Provider status unavailable."}
+            </p>
+          </div>
+          <code>{data?.llm_provider?.model ?? "—"}</code>
+          <StatusBadge value={data?.llm_provider?.status ?? "unknown"} />
+        </div>
+        <p className="llm-config-note">
+          Configure <code>LLM_PROVIDER</code>, <code>LLM_MODEL</code>, and the
+          matching API key in the backend environment. Groq uses{" "}
+          <code>GROQ_API_KEY</code>; compatible endpoints use{" "}
+          <code>LLM_API_KEY</code>. Keys are never sent to the browser.
+          Heuristic proposals remain active when the provider is unavailable.
+        </p>
+      </section>
       <section className="panel safety-panel">
         <PanelTitle
           title="Safety boundaries"

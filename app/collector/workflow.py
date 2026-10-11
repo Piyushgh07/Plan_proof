@@ -1,6 +1,7 @@
 """End-to-end slow-query analysis workflow."""
 
 from app.collector.candidate_generation import generate_candidates
+from app.collector.llm_candidates import propose_candidates
 from app.collector.plans import capture_plan
 from app.collector.statistics import collect_query_stats
 from app.collector.validator import contains_parameter_reference, validate_select
@@ -26,22 +27,32 @@ async def analyze_query(sql: str) -> dict:
         return {
             "status": plan_result.status,
             "reason": plan_result.reason,
-            "plan": plan_result.plan,
+            "proposal_plan": plan_result.plan,
             "candidates": [],
         }
 
-    candidates = generate_candidates(plan_result.plan)
+    batch = await propose_candidates(
+        sql, plan_result.plan, generate_candidates(plan_result.plan)
+    )
     results = []
-    for candidate in candidates:
+    for proposal in batch.proposals:
+        candidate = proposal.candidate
         comparison = await compare_hypothetical_index(sql, candidate)
         decision = decide_index(comparison)
         await persist_verification(
-            sql, candidate, comparison, decision, source="heuristic"
+            sql,
+            candidate,
+            comparison,
+            decision,
+            source=proposal.source,
+            proposal_rationale=proposal.rationale,
         )
         results.append(
             {
                 "table": candidate.table_name,
                 "columns": list(candidate.columns),
+                "source": proposal.source,
+                "proposal_rationale": proposal.rationale,
                 "comparison_status": comparison.status,
                 "comparison_reason": comparison.reason,
                 "baseline_cost": comparison.baseline_cost,
@@ -51,17 +62,21 @@ async def analyze_query(sql: str) -> dict:
                 "candidate_index_used": comparison.candidate_index_used,
                 "decision": decision.status,
                 "reason": decision.reason,
+                "decision_explanation": decision.explanation,
                 "improvement_percent": decision.improvement_percent,
             }
         )
 
     return {
-        "status": "analyzed" if candidates else "unsupported",
+        "status": "analyzed" if batch.proposals else "unsupported",
         "reason": None
-        if candidates
+        if batch.proposals
         else "No supported index candidates were generated.",
-        "plan": plan_result.plan,
+        "proposal_plan": plan_result.plan,
         "candidates": results,
+        "proposal_source": batch.source,
+        "proposal_status": batch.status,
+        "proposal_reason": batch.reason,
     }
 
 
@@ -91,14 +106,22 @@ async def analyze_slow_queries(limit: int = 10) -> dict:
             results.append(item)
             continue
 
-        candidates = generate_candidates(plan_result.plan)
+        batch = await propose_candidates(
+            stats.query,
+            plan_result.plan,
+            generate_candidates(plan_result.plan),
+        )
+        item["proposal_source"] = batch.source
+        item["proposal_status"] = batch.status
+        item["proposal_reason"] = batch.reason
 
-        if not candidates:
+        if not batch.proposals:
             item["reason"] = "No supported index candidates were generated."
             results.append(item)
             continue
 
-        for candidate in candidates:
+        for proposal in batch.proposals:
+            candidate = proposal.candidate
             comparison = await compare_hypothetical_index(stats.query, candidate)
             decision = decide_index(comparison)
 
@@ -107,7 +130,8 @@ async def analyze_slow_queries(limit: int = 10) -> dict:
                 candidate,
                 comparison,
                 decision,
-                source="heuristic",
+                source=proposal.source,
+                proposal_rationale=proposal.rationale,
                 calls=stats.calls,
                 total_exec_time_ms=stats.total_exec_time,
                 mean_exec_time_ms=stats.mean_exec_time,
@@ -117,10 +141,19 @@ async def analyze_slow_queries(limit: int = 10) -> dict:
                 {
                     "table": candidate.table_name,
                     "columns": list(candidate.columns),
+                    "source": proposal.source,
+                    "proposal_rationale": proposal.rationale,
                     "comparison_status": comparison.status,
+                    "comparison_reason": comparison.reason,
+                    "baseline_plan": comparison.baseline_plan,
+                    "candidate_plan": comparison.candidate_plan,
+                    "baseline_cost": comparison.baseline_cost,
+                    "candidate_cost": comparison.candidate_cost,
                     "decision": decision.status,
                     "reason": decision.reason,
+                    "decision_explanation": decision.explanation,
                     "improvement_percent": decision.improvement_percent,
+                    "candidate_index_used": comparison.candidate_index_used,
                 }
             )
 

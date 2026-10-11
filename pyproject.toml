@@ -16,6 +16,7 @@ dependencies = [
     "asyncpg",
     "alembic",
     "pglast",
+    "httpx",
 ]
 
 [project.optional-dependencies]

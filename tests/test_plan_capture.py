@@ -28,20 +28,26 @@ async def test_rejects_unresolved_parameters():
     assert "parameter" in result.reason.lower()
     assert result.plan is None
 
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 
 class FailingConnection:
+    def __init__(self, error=None):
+        self.error = error or SQLAlchemyError("sensitive database details")
+
     async def __aenter__(self):
-        raise SQLAlchemyError("sensitive database details")
+        raise self.error
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         return False
 
 
 class FailingEngine:
+    def __init__(self, error=None):
+        self.error = error
+
     def connect(self):
-        return FailingConnection()
+        return FailingConnection(self.error)
 
 
 @pytest.mark.asyncio
@@ -55,5 +61,28 @@ async def test_database_connection_failure_is_reported_safely(monkeypatch):
 
     assert result.status == "failed"
     assert result.plan is None
-    assert "SQLAlchemyError" in result.reason
+    assert "Target database could not capture this plan" in result.reason
     assert "sensitive database details" not in result.reason
+
+
+@pytest.mark.asyncio
+async def test_database_authentication_failure_has_safe_actionable_reason(monkeypatch):
+    class PostgresAuthError(Exception):
+        sqlstate = "28P01"
+
+    failure = OperationalError(
+        "connect", {}, PostgresAuthError("sensitive password detail")
+    )
+    monkeypatch.setattr(
+        "app.collector.plans.target_engine",
+        FailingEngine(failure),
+    )
+
+    result = await capture_plan("SELECT id FROM users LIMIT 5")
+
+    assert result.status == "failed"
+    assert result.reason == (
+        "Target database authentication failed. Check the configured "
+        "read-only target credentials."
+    )
+    assert "sensitive password detail" not in result.reason

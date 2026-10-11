@@ -3,9 +3,10 @@
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
-from app.verifier.candidates import IndexCandidate
-from app.verifier.hypopg import compare_hypothetical_index
 
+from app.verifier.candidates import IndexCandidate
+from app.verifier.decision import decide_index
+from app.verifier.hypopg import compare_hypothetical_index
 
 FAKE_INDEX_NAME = "<12345>btree_orders_user_id"
 FAKE_PATTERN_INDEX_NAME = "<12346>btree_products_name"
@@ -28,6 +29,7 @@ class FakeConnection:
         missing_index=False,
         use_candidate_index=True,
         fail_reset=False,
+        plans=None,
     ):
         self.statements = []
         self.ddls = []
@@ -36,6 +38,7 @@ class FakeConnection:
         self.missing_index = missing_index
         self.use_candidate_index = use_candidate_index
         self.fail_reset = fail_reset
+        self.plans = plans
         self.invalidated = False
 
     async def exec_driver_sql(self, sql):
@@ -45,7 +48,9 @@ class FakeConnection:
         self.statements.append(sql)
         self.explain_count += 1
 
-        if self.explain_count == 1:
+        if self.plans is not None:
+            plan = self.plans[self.explain_count - 1]
+        elif self.explain_count == 1:
             plan = {
                 "Total Cost": 20.0,
                 "Node Type": "Seq Scan",
@@ -81,6 +86,8 @@ class FakeConnection:
 
             allowed_ddls = {
                 'CREATE INDEX ON "orders" ("user_id")',
+                'CREATE INDEX ON "orders" ("id")',
+                'CREATE INDEX ON "order_items" ("order_id")',
                 'CREATE INDEX ON "products" ("name" text_pattern_ops)',
             }
             assert ddl in allowed_ddls
@@ -144,6 +151,216 @@ async def test_compares_baseline_and_hypothetical_plan(monkeypatch):
     assert result.candidate_index_used is True
     assert any("hypopg_reset" in s for s in connection.statements)
     assert connection.invalidated is False
+
+
+@pytest.mark.asyncio
+async def test_uses_root_total_cost_not_nested_plan_costs(monkeypatch):
+    baseline = {
+        "Node Type": "Aggregate",
+        "Total Cost": 20595.42,
+        "Plans": [
+            {
+                "Node Type": "Nested Loop",
+                "Plans": [
+                    {
+                        "Node Type": "Index Scan",
+                        "Total Cost": 8.31,
+                    }
+                ],
+            }
+        ],
+    }
+    candidate = {
+        "Node Type": "Aggregate",
+        "Total Cost": 19975.49,
+        "Plans": [
+            {
+                "Node Type": "Nested Loop",
+                "Plans": [
+                    {
+                        "Node Type": "Bitmap Heap Scan",
+                        "Plans": [
+                            {
+                                "Node Type": "Bitmap Index Scan",
+                                "Total Cost": 8.06,
+                                "Index Name": FAKE_INDEX_NAME,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    connection = FakeConnection(plans=[baseline, candidate])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.baseline_plan == baseline
+    assert result.candidate_plan == candidate
+    assert result.baseline_cost == baseline["Total Cost"]
+    assert result.candidate_cost == candidate["Total Cost"]
+    assert result.baseline_cost != 8.31
+    assert result.candidate_cost != 8.06
+    assert result.candidate_index_used is True
+    assert result.baseline_cost == 20595.42
+    assert result.candidate_cost == 19975.49
+    assert result.candidate_index_names == (FAKE_INDEX_NAME,)
+
+
+@pytest.mark.asyncio
+async def test_identical_plans_are_not_evidence_of_index_selection(monkeypatch):
+    plan = {
+        "Node Type": "Hash Join",
+        "Total Cost": 4203.87,
+        "Plans": [
+            {"Node Type": "Seq Scan", "Relation Name": "orders"},
+            {"Node Type": "Seq Scan", "Relation Name": "order_items"},
+        ],
+    }
+    connection = FakeConnection(plans=[plan, plan.copy()])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    sql = (
+        "SELECT * FROM orders JOIN order_items "
+        "ON orders.id = order_items.order_id"
+    )
+    result = await compare_hypothetical_index(
+        sql, IndexCandidate("order_items", ("order_id",))
+    )
+    decision = decide_index(result)
+
+    explain_statements = [
+        statement
+        for statement in connection.statements
+        if statement.startswith("EXPLAIN")
+    ]
+    assert explain_statements == [
+        f"EXPLAIN (FORMAT JSON) {sql}",
+        f"EXPLAIN (FORMAT JSON) {sql}",
+    ]
+    assert result.baseline_plan == result.candidate_plan
+    assert result.baseline_cost == result.candidate_cost == 4203.87
+    assert result.candidate_index_used is False
+    assert decision.status == "reject"
+    assert decision.improvement_percent == 0.0
+
+
+@pytest.mark.asyncio
+async def test_cost_change_without_exact_nested_index_is_rejected(monkeypatch):
+    baseline = {
+        "Node Type": "Hash Join",
+        "Total Cost": 4203.87,
+        "Plans": [
+            {"Node Type": "Seq Scan", "Relation Name": "orders"},
+            {"Node Type": "Seq Scan", "Relation Name": "order_items"},
+        ],
+    }
+    candidate = {
+        "Node Type": "Hash Join",
+        "Total Cost": 4167.64,
+        "Plans": [
+            {"Node Type": "Seq Scan", "Relation Name": "orders"},
+            {"Node Type": "Seq Scan", "Relation Name": "order_items"},
+        ],
+    }
+    connection = FakeConnection(plans=[baseline, candidate])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders JOIN order_items "
+        "ON orders.id = order_items.order_id",
+        IndexCandidate("order_items", ("order_id",)),
+    )
+
+    assert result.baseline_cost == baseline["Total Cost"]
+    assert result.candidate_cost == candidate["Total Cost"]
+    assert result.candidate_index_used is False
+    assert decide_index(result).status == "reject"
+
+
+@pytest.mark.asyncio
+async def test_index_name_on_non_scan_metadata_does_not_count(monkeypatch):
+    baseline = {"Node Type": "Hash Join", "Total Cost": 20.0}
+    candidate = {
+        "Node Type": "Hash Join",
+        "Total Cost": 12.0,
+        "Index Name": FAKE_INDEX_NAME,
+        "Plans": [
+            {
+                "Node Type": "Seq Scan",
+                "Relation Name": "order_items",
+                "Index Name": FAKE_INDEX_NAME,
+            }
+        ],
+    }
+    connection = FakeConnection(plans=[baseline, candidate])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders", IndexCandidate("orders", ("id",))
+    )
+
+    assert result.candidate_index_names == ()
+    assert result.candidate_index_used is False
+
+
+@pytest.mark.asyncio
+async def test_lookalike_index_name_does_not_count_as_exact_match(monkeypatch):
+    baseline = {"Node Type": "Seq Scan", "Total Cost": 20.0}
+    candidate = {
+        "Node Type": "Index Scan",
+        "Total Cost": 12.0,
+        "Index Name": FAKE_INDEX_NAME + "_other",
+    }
+    connection = FakeConnection(plans=[baseline, candidate])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders", IndexCandidate("orders", ("user_id",))
+    )
+
+    assert result.candidate_index_names == (FAKE_INDEX_NAME + "_other",)
+    assert result.candidate_index_used is False
+
+
+@pytest.mark.asyncio
+async def test_exact_name_must_be_absent_from_baseline_plan(monkeypatch):
+    baseline = {
+        "Node Type": "Index Scan",
+        "Total Cost": 20.0,
+        "Index Name": FAKE_INDEX_NAME,
+    }
+    candidate = {
+        "Node Type": "Index Scan",
+        "Total Cost": 12.0,
+        "Index Name": FAKE_INDEX_NAME,
+    }
+    connection = FakeConnection(plans=[baseline, candidate])
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(connection)
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders", IndexCandidate("orders", ("user_id",))
+    )
+
+    assert result.baseline_index_names == (FAKE_INDEX_NAME,)
+    assert result.candidate_index_names == (FAKE_INDEX_NAME,)
+    assert result.candidate_index_used is False
 
 
 @pytest.mark.asyncio
@@ -502,7 +719,7 @@ async def test_missing_total_cost_returns_failed(monkeypatch):
     )
 
     assert result.status == "failed"
-    assert "KeyError" in result.reason
+    assert "TypeError" in result.reason
 
 
 @pytest.mark.asyncio

@@ -14,6 +14,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
+from app.collector.llm_candidates import provider_status
 from app.collector.statistics import collect_query_stats
 from app.collector.validator import (
     contains_parameter_reference,
@@ -161,6 +162,7 @@ async def system_status() -> dict[str, Any]:
         if all(v["status"] == "ready" for v in checks.values())
         else "degraded",
         "checks": checks,
+        "llm_provider": provider_status(),
     }
 
 
@@ -414,6 +416,8 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
             "candidate_root_node": comparison.candidate_node_type,
             "candidate_index_name": comparison.candidate_index_name,
             "candidate_index_used": comparison.candidate_index_used,
+            "baseline_plan": comparison.baseline_plan,
+            "candidate_plan": comparison.candidate_plan,
             "baseline_plan_summary": summarize_or_none(comparison.baseline_plan),
             "candidate_plan_summary": summarize_or_none(comparison.candidate_plan),
         },
@@ -440,7 +444,9 @@ async def analyze_queries(request: AnalyzeRequest) -> dict[str, Any]:
             result = await analyze_query(request.sql)
             if result["status"] == "failed":
                 raise HTTPException(
-                    status_code=503, detail="Query plan capture failed."
+                    status_code=503,
+                    detail=result.get("reason")
+                    or "Query plan capture failed.",
                 )
             return result
         return await analyze_slow_queries(request.limit)

@@ -1,18 +1,52 @@
 # Plan Proof
 
-Plan Proof is a verified PostgreSQL query advisor. It collects slow query
-statistics, explains supported queries, proposes conservative index candidates,
-and checks every candidate with PostgreSQL's planner and HypoPG before making a
-recommendation. The web dashboard displays live workload data, verification
-history, plan evidence, benchmark results, and service readiness.
+**PostgreSQL index advice you can inspect before you trust it.**
 
-## Why it exists
+Plan Proof finds workload queries worth examining, proposes possible indexes,
+and asks PostgreSQL whether each exact hypothetical index changes the plan.
+It shows the query, proposal, baseline and candidate plans, estimated costs,
+and final decision together so a developer or database operator can inspect the
+evidence behind the recommendation.
 
-A column appearing in a filter or join does not guarantee that an index will
-help. A valid index can go unused, provide little estimated improvement, or
-add write and storage costs. Plan Proof compares the baseline plan with a plan
-that includes a hypothetical index, then applies a documented decision rule.
-It never creates the proposed index in the target database.
+## Why Plan Proof is needed
+
+Index suggestions are cheap to generate and easy to get wrong. A column in a
+`WHERE` clause or join may look like an obvious index target, but that alone
+does not tell you whether PostgreSQL will use the index, whether the plan will
+improve, or whether the estimate is large enough to justify further work.
+Creating indexes directly to find out can also consume storage and slow writes.
+
+Plan Proof closes that evidence gap with a repeatable check: it captures a
+baseline plan, asks HypoPG to model the proposed index in an isolated sandbox,
+captures the candidate plan, and applies the same decision policy to every
+proposal. The target database is queried read-only; proposed indexes are never
+created there. The result is an inspectable planner estimate, not a promise of
+runtime speedup.
+
+## What Plan Proof does
+
+- **Finds candidates from workload data.** It reads `pg_stat_statements`,
+  captures plans for supported queries, and proposes conservative indexes for
+  supported filters and equality joins. A single query can also be submitted
+  directly.
+- **Uses LLMs as proposal sources, not authorities.** An optional provider can
+  suggest candidates and explain its rationale. If it is unavailable or its
+  response is invalid, the app can fall back to deterministic heuristics.
+  Every proposal is validated locally and goes through the same verification.
+- **Checks the exact index in PostgreSQL.** HypoPG models the index in a
+  separate sandbox. Plan Proof checks whether PostgreSQL selected that exact
+  hypothetical index and compares the root estimated costs from the two plans.
+- **Keeps evidence with the decision.** The dashboard and history show each
+  proposal alongside its verification plans, costs, status, and explanation.
+
+### How to read a decision
+
+The current policy accepts a proposal only when PostgreSQL selects the exact
+hypothetical index and the candidate plan's estimated cost improves by at least
+10%. An unused index or a plan with no cost improvement is rejected. A
+comparison that cannot be trusted, or an improvement below the threshold, is
+inconclusive. These are planner-based decisions: they do not measure real
+execution time, index storage, or write overhead.
 
 ## Architecture
 
@@ -28,12 +62,12 @@ pg_stat_statements  HypoPG plan checks    Runs and decisions
 read-only EXPLAIN   representative schema PostgreSQL / app_db
    |
    v
-Collect -> capture plan -> heuristic candidates -> validate
+Collect -> capture plan -> LLM or heuristic proposals -> validate
                                       -> compare -> decide -> persist
+```
 
 Redis is included in Compose and reported by the system readiness check. The
 application does not currently use Redis for job processing.
-```
 
 The target and sandbox should use matching schema, representative data,
 statistics, and planner settings. The target is queried read-only. The sandbox
@@ -72,6 +106,15 @@ analysis and verification records in `app_db`.
    private; it is ignored by Git. The example URLs use the published local
    ports.
 
+   Optional LLM proposals use Groq. Leave `GROQ_API_KEY` blank to use the
+   deterministic heuristic generator. To enable Groq, set `GROQ_API_KEY` in
+   the backend `.env`; the default model is `openai/gpt-oss-20b`, currently
+   listed among Groq's production models. The app requests JSON and validates
+   every field locally before verification. Set `LLM_MODEL` to another model
+   supported by your provider when needed. An OpenAI-compatible endpoint can
+   use `LLM_PROVIDER=openai_compatible`, `LLM_API_KEY`, and `LLM_BASE_URL`.
+   The key is read only by the backend and is never included in API responses.
+
 2. Start the complete application. Compose initializes an empty target volume
    with the database roles and statistics extension, and an empty sandbox
    volume with HypoPG and the benchmark schema. The API applies its Alembic
@@ -82,7 +125,8 @@ analysis and verification records in `app_db`.
    docker compose ps
    ```
 
-   Open the dashboard at <http://localhost:3000>. The API is available at
+   Open the dashboard at <http://localhost:3001> by default (`WEB_PORT` can
+   override this). The API is available at
    <http://localhost:8000> and its interactive documentation at
    <http://localhost:8000/docs>. Compose reuses existing named volumes; it does
    not reset or remove database data.
@@ -91,6 +135,9 @@ analysis and verification records in `app_db`.
    PostgreSQL data directory is first created. If an existing target volume
    predates the reader-role setup, provision that role and its read-only
    grants manually before using `/api/v1/analyze`.
+
+   Stop the services with `docker compose down`. This keeps the named database
+   and Redis volumes; do not add `-v` unless you intend to remove their data.
 
 3. For local backend development and benchmark scripts, install Python 3.12:
 
@@ -140,7 +187,7 @@ analysis and verification records in `app_db`.
 
 ### Local frontend development
 
-The web container serves the production build on port 3000. To run the Vite
+The web container serves the production build on host port 3001 by default. To run the Vite
 development server instead, keep the Compose API and databases running, then:
 
 ```sh
@@ -268,7 +315,7 @@ curl -sS http://localhost:8000/api/v1/analyze \
   -d '{"limit":10}'
 ```
 
-The dashboard at <http://localhost:3000> includes Overview, Query workload,
+The dashboard at <http://localhost:3001> includes Overview, Query workload,
 Analyze query, Analysis history, Benchmark, and System status screens. The
 Analyze screen accepts a SELECT and offers direct candidate verification with
 baseline and candidate plan summaries. `/verify` demonstrates a direct
@@ -347,15 +394,18 @@ considerations, and measurement methodology.
   extensions must be kept representative of one another.
 - HypoPG results are planner estimates and do not measure execution time,
   write overhead, storage use, or operational impact.
-- There is no authentication, background queue, automatic index application,
-  or LLM candidate generator. Keep the dashboard on a trusted local network.
+- There is no authentication, background queue, or automatic index application.
+  Keep the dashboard on a trusted local network.
+- LLM proposals require a provider key and network access. Provider timeouts,
+  invalid responses, and unavailable models fall back to the deterministic
+  heuristic. The UI identifies the proposal source. Every candidate still
+  passes the same allowlist and HypoPG verification; the LLM cannot approve an
+  index.
 - `pg_stat_statements` eligibility and SQL AST validation are conservative
   safeguards, not a complete SQL security boundary.
 
 ## Future work
 
-After the MVP is stable: safely handle parameterized query examples; add
-structured LLM candidate generation through the same validation and
-verification path; record controlled runtime benchmarks separately from
-planner estimates; broaden query support; and add API authentication and
-operational limits.
+Remaining work includes safely handling parameterized query examples, recording
+controlled runtime benchmarks separately from planner estimates, broadening
+query support, and adding API authentication and operational limits.

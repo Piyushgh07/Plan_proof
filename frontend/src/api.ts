@@ -15,9 +15,11 @@ export type Candidate = {
   columns: string[];
   proposal_sql?: string | null;
   source?: string;
+  proposal_rationale?: string;
   rationale?: string | null;
   decision: string;
   reason: string;
+  decision_explanation?: string;
   comparison_status?: string;
   comparison_reason?: string;
   baseline_cost?: number | null;
@@ -64,6 +66,13 @@ export const api = {
     request<{
       status: string;
       checks: Record<string, { status: string; detail: string }>;
+      llm_provider: {
+        provider: string;
+        model: string;
+        configured: boolean;
+        status: string;
+        detail: string;
+      };
     }>("/api/v1/status"),
   workload: (limit = 100) =>
     request<{ count: number; queries: QueryRow[] }>(
@@ -79,8 +88,11 @@ export const api = {
     request<{
       status: string;
       reason: string | null;
-      plan?: Record<string, unknown>;
+      proposal_plan?: Record<string, unknown>;
       candidates: Candidate[];
+      proposal_source?: string;
+      proposal_status?: string;
+      proposal_reason?: string | null;
     }>("/api/v1/analyze", { method: "POST", body: JSON.stringify({ sql }) }),
   verify: (payload: { sql: string; table_name: string; columns: string[] }) =>
     request<Record<string, any>>("/api/v1/verify", {

@@ -1,11 +1,11 @@
 
 """Make a conservative decision from a hypothetical-index comparison."""
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
 from app.verifier.hypopg import HypoPGResult
-
 
 DecisionStatus = Literal["accept", "reject", "inconclusive"]
 
@@ -49,6 +49,15 @@ def decide_index(
                 "The comparison did not provide both estimated planner "
                 "costs, so the improvement cannot be calculated."
             ),
+        )
+
+    if not math.isfinite(result.baseline_cost) or not math.isfinite(
+        result.candidate_cost
+    ) or result.candidate_cost < 0:
+        return VerificationDecision(
+            status="inconclusive",
+            reason="Plan costs are invalid.",
+            explanation="The comparison returned an invalid planner cost.",
         )
 
     if result.baseline_cost <= 0:

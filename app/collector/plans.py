@@ -20,6 +20,32 @@ class PlanResult:
     plan: dict[str, Any] | list[Any] | None = None
 
 
+def _safe_plan_failure_reason(exc: SQLAlchemyError) -> str:
+    """Translate database failures into actionable, non-sensitive text."""
+    original = getattr(exc, "orig", None)
+    sqlstate = getattr(original, "sqlstate", None)
+
+    if sqlstate == "28P01" or sqlstate == "28000":
+        return (
+            "Target database authentication failed. Check the configured "
+            "read-only target credentials."
+        )
+    if sqlstate == "42501":
+        return (
+            "Target database denied the read-only plan request. Check the "
+            "reader role's grants."
+        )
+    if isinstance(sqlstate, str) and sqlstate.startswith("08"):
+        return (
+            "Target database is unavailable. Check its address and that "
+            "PostgreSQL is running."
+        )
+    return (
+        "Target database could not capture this plan. Check database "
+        "availability, target schema access, and query compatibility."
+    )
+
+
 async def capture_plan(sql: str) -> PlanResult:
     """Capture a JSON plan without executing the query itself."""
     validation = validate_select(sql)
@@ -52,8 +78,13 @@ async def capture_plan(sql: str) -> PlanResult:
             raw_plan,
         )
 
-    except (SQLAlchemyError, ValueError, TypeError) as exc:
+    except SQLAlchemyError as exc:
         return PlanResult(
             "failed",
-            f"Plan capture failed: {type(exc).__name__}.",
+            _safe_plan_failure_reason(exc),
+        )
+    except (ValueError, TypeError):
+        return PlanResult(
+            "failed",
+            "Target database returned an invalid EXPLAIN response.",
         )

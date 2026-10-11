@@ -1,3 +1,4 @@
+import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -55,6 +56,72 @@ def test_valid_candidate_is_accepted(mock_comparison):
 
     assert response.status_code == 200
     assert response.json()["decision"]["status"] == "accept"
+
+
+def test_verify_response_costs_match_root_plans_and_threshold(monkeypatch):
+    baseline_plan = {
+        "Node Type": "Aggregate",
+        "Total Cost": 20595.42,
+        "Plans": [{"Node Type": "Index Scan", "Total Cost": 8.31}],
+    }
+    candidate_plan = {
+        "Node Type": "Aggregate",
+        "Total Cost": 19975.49,
+        "Plans": [
+            {
+                "Node Type": "Index Scan",
+                "Total Cost": 8.06,
+                "Index Name": "hypo_test_index",
+            }
+        ],
+    }
+
+    async def fake_compare(sql, candidate):
+        return SimpleNamespace(
+            status="compared",
+            reason="The exact proposed hypothetical index was selected.",
+            baseline_cost=baseline_plan["Total Cost"],
+            candidate_cost=candidate_plan["Total Cost"],
+            baseline_node_type="Aggregate",
+            candidate_node_type="Aggregate",
+            candidate_index_name="hypo_test_index",
+            candidate_index_used=True,
+            baseline_plan=baseline_plan,
+            candidate_plan=candidate_plan,
+        )
+
+    async def fake_persist(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(main, "compare_hypothetical_index", fake_compare)
+    monkeypatch.setattr(main, "persist_verification", fake_persist)
+
+    body = asyncio.run(
+        main.verify_index(main.VerifyRequest(**valid_request()))
+    )
+    comparison = body["comparison"]
+
+    assert comparison["baseline_plan_summary"]["total_cost"] == comparison[
+        "baseline_cost"
+    ]
+    assert comparison["candidate_plan_summary"]["total_cost"] == comparison[
+        "candidate_cost"
+    ]
+    assert comparison["baseline_cost"] == 20595.42
+    assert comparison["candidate_cost"] == 19975.49
+    assert comparison["baseline_plan"] == baseline_plan
+    assert comparison["candidate_plan"] == candidate_plan
+    assert comparison["baseline_plan"]["Total Cost"] == comparison[
+        "baseline_cost"
+    ]
+    assert comparison["candidate_plan"]["Total Cost"] == comparison[
+        "candidate_cost"
+    ]
+    assert body["decision"]["estimated_cost_improvement_percent"] == pytest.approx(
+        3.01, abs=0.01
+    )
+    assert body["decision"]["status"] == "inconclusive"
+    assert body["decision"]["minimum_improvement_percent"] == 10.0
 
 
 def test_delete_statement_is_rejected():
@@ -259,6 +326,24 @@ def test_single_query_analysis_endpoint_uses_real_workflow(monkeypatch):
     assert response.status_code == 200
     assert response.json()["status"] == "unsupported"
     assert response.json()["candidates"] == []
+
+
+def test_single_query_analysis_returns_sanitized_capture_reason(monkeypatch):
+    async def failed_capture(sql):
+        return {
+            "status": "failed",
+            "reason": "Target plan capture failed (OperationalError).",
+            "candidates": [],
+        }
+
+    monkeypatch.setattr(main, "analyze_query", failed_capture)
+    response = client.post("/api/v1/analyze", json={"sql": valid_request()["sql"]})
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Target plan capture failed (OperationalError)."
+    )
+    assert "password" not in response.text.lower()
 
 
 def test_workload_endpoint_returns_actual_collection(monkeypatch):

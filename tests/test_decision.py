@@ -61,6 +61,24 @@ def test_inconclusive_when_improvement_is_below_threshold():
     assert "10.00%" in decision.explanation
 
 
+def test_nested_cost_discrepancy_uses_root_cost_and_keeps_threshold():
+    result = make_result(
+        baseline=20595.42,
+        candidate=19975.49,
+        index_used=True,
+    )
+
+    decision = decide_index(result)
+
+    assert decision.status == "inconclusive"
+    assert decision.improvement_percent == pytest.approx(
+        (20595.42 - 19975.49) / 20595.42 * 100
+    )
+    assert decision.improvement_percent == pytest.approx(3.01, abs=0.01)
+    assert "3.01%" in decision.explanation
+    assert "10.00%" in decision.explanation
+
+
 def test_inconclusive_when_comparison_failed():
     decision = decide_index(make_result(status="failed"))
 
