@@ -1,4 +1,3 @@
-
 """Compare PostgreSQL plans using HypoPG hypothetical indexes."""
 
 import json
@@ -129,6 +128,9 @@ async def compare_hypothetical_index(
             "Unresolved parameter references are not supported.",
         )
 
+    result: HypoPGResult | None = None
+    cleanup_failed = False
+
     try:
         async with sandbox_engine.connect() as conn:
             try:
@@ -169,7 +171,7 @@ async def compare_hypothetical_index(
                     candidate_index_name,
                 )
 
-                return HypoPGResult(
+                result = HypoPGResult(
                     status="compared",
                     reason=(
                         "The exact proposed hypothetical index appears "
@@ -197,10 +199,11 @@ async def compare_hypothetical_index(
                 )
 
             finally:
-                # Hypothetical indexes must not leak into later comparisons.
+                # Cleanup failure must not be reported as successful verification.
                 try:
                     await conn.execute(text("SELECT hypopg_reset()"))
                 except SQLAlchemyError:
+                    cleanup_failed = True
                     await conn.invalidate()
 
     except Exception as exc:
@@ -208,3 +211,17 @@ async def compare_hypothetical_index(
             status="failed",
             reason=f"Plan comparison failed: {type(exc).__name__}.",
         )
+
+    if cleanup_failed:
+        return HypoPGResult(
+            status="failed",
+            reason="Plan comparison failed: HypoPG cleanup failure.",
+        )
+
+    if result is None:
+        return HypoPGResult(
+            status="failed",
+            reason="Plan comparison failed: missing result.",
+        )
+
+    return result

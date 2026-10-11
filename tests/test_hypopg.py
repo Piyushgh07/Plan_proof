@@ -280,11 +280,13 @@ async def test_missing_hypothetical_index_fails_safely(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_cleanup_failure_invalidates_connection(monkeypatch):
-    connection = FakeConnection(fail_reset=True)
+async def test_cleanup_failure_returns_failed_and_invalidates_connection(
+    monkeypatch,
+):
+    """Cleanup failure must fail verification and invalidate the connection."""
+    conn = StepFailConnection(fail_at="cleanup_reset")
     monkeypatch.setattr(
-        "app.verifier.hypopg.sandbox_engine",
-        FakeEngine(connection),
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
     )
 
     result = await compare_hypothetical_index(
@@ -292,9 +294,9 @@ async def test_cleanup_failure_invalidates_connection(monkeypatch):
         IndexCandidate("orders", ("user_id",)),
     )
 
-    assert connection.invalidated is True
     assert result.status == "failed"
-    assert "SQLAlchemyError" in result.reason
+    assert "cleanup failure" in result.reason.lower()
+    assert conn.invalidated is True
 
 
 @pytest.mark.asyncio
@@ -341,3 +343,224 @@ async def test_real_sandbox_connection_failure_is_reported_safely(
         assert "127.0.0.1" not in result.reason
     finally:
         await engine.dispose()
+
+
+# --- Failure-path tests for every verifier step ---
+
+
+class StepFailConnection:
+    """Configurable connection that fails at a specific verifier step."""
+
+    def __init__(self, *, fail_at, error_class=SQLAlchemyError):
+        self.statements = []
+        self.ddls = []
+        self.explain_count = 0
+        self.reset_count = 0
+        self.invalidated = False
+        self.fail_at = fail_at
+        self.error_class = error_class
+
+    async def execute(self, statement, params=None):
+        sql = str(statement)
+        self.statements.append(sql)
+
+        if "hypopg_reset" in sql:
+            self.reset_count += 1
+            if self.fail_at == "cleanup_reset" and self.reset_count == 2:
+                raise SQLAlchemyError("Simulated cleanup failure.")
+            return FakeResult(None)
+
+        if "hypopg_create_index" in sql:
+            if self.fail_at == "create_index":
+                raise self.error_class("Simulated create-index failure.")
+            self.ddls.append(params["ddl"])
+            return FakeResult(FAKE_INDEX_NAME)
+
+        return FakeResult(None)
+
+    async def exec_driver_sql(self, sql):
+        self.explain_count += 1
+
+        if self.fail_at == "baseline_explain" and self.explain_count == 1:
+            raise self.error_class("Simulated baseline failure.")
+        if self.fail_at == "candidate_explain" and self.explain_count == 2:
+            raise self.error_class("Simulated candidate failure.")
+
+        if self.explain_count == 1:
+            plan = {"Total Cost": 20.0, "Node Type": "Seq Scan"}
+        else:
+            plan = {
+                "Total Cost": 12.0,
+                "Node Type": "Index Scan",
+                "Index Name": FAKE_INDEX_NAME,
+            }
+        return FakeResult([{"Plan": plan}])
+
+    async def invalidate(self):
+        self.invalidated = True
+
+
+@pytest.mark.asyncio
+async def test_baseline_explain_failure_returns_failed(monkeypatch):
+    """Baseline EXPLAIN failure prevents comparison."""
+    conn = StepFailConnection(fail_at="baseline_explain")
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "SQLAlchemyError" in result.reason
+    assert conn.explain_count == 1
+
+
+@pytest.mark.asyncio
+async def test_hypopg_create_index_failure_returns_failed(monkeypatch):
+    """HypoPG create-index failure returns a failed result."""
+    conn = StepFailConnection(fail_at="create_index")
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "SQLAlchemyError" in result.reason
+    assert conn.explain_count == 1
+
+
+@pytest.mark.asyncio
+async def test_candidate_explain_failure_returns_failed(monkeypatch):
+    """Candidate EXPLAIN failure after successful baseline returns failed."""
+    conn = StepFailConnection(fail_at="candidate_explain")
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "SQLAlchemyError" in result.reason
+    assert conn.explain_count == 2
+
+
+@pytest.mark.asyncio
+async def test_malformed_explain_json_returns_failed(monkeypatch):
+    """Malformed EXPLAIN JSON structure returns a failed result."""
+    class MalformedPlanConnection:
+        def __init__(self):
+            self.statements = []
+            self.invalidated = False
+
+        async def execute(self, stmt, params=None):
+            self.statements.append(str(stmt))
+            return FakeResult(None)
+
+        async def exec_driver_sql(self, sql):
+            return FakeResult({"unexpected": "structure"})
+
+        async def invalidate(self):
+            self.invalidated = True
+
+    conn = MalformedPlanConnection()
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "ValueError" in result.reason
+
+
+@pytest.mark.asyncio
+async def test_missing_total_cost_returns_failed(monkeypatch):
+    """Plan missing Total Cost key returns a failed result."""
+    class MissingCostConnection:
+        def __init__(self):
+            self.statements = []
+            self.ddls = []
+            self.explain_count = 0
+            self.invalidated = False
+
+        async def execute(self, stmt, params=None):
+            sql = str(stmt)
+            self.statements.append(sql)
+            if "hypopg_create_index" in sql:
+                self.ddls.append(params["ddl"])
+                return FakeResult(FAKE_INDEX_NAME)
+            return FakeResult(None)
+
+        async def exec_driver_sql(self, sql):
+            self.explain_count += 1
+            return FakeResult([{"Plan": {"Node Type": "Seq Scan"}}])
+
+        async def invalidate(self):
+            self.invalidated = True
+
+    conn = MissingCostConnection()
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "KeyError" in result.reason
+
+
+@pytest.mark.asyncio
+async def test_cleanup_failure_returns_failed_and_invalidates_connection(
+    monkeypatch,
+):
+    """Cleanup failure must fail verification and invalidate the connection."""
+    conn = StepFailConnection(fail_at="cleanup_reset")
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "cleanup failure" in result.reason.lower()
+    assert conn.invalidated is True
+
+
+@pytest.mark.asyncio
+async def test_python_timeout_returns_failed(monkeypatch):
+    """A Python timeout during EXPLAIN returns a failed result."""
+    conn = StepFailConnection(
+        fail_at="baseline_explain",
+        error_class=TimeoutError,
+    )
+    monkeypatch.setattr(
+        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
+    )
+
+    result = await compare_hypothetical_index(
+        "SELECT * FROM orders WHERE user_id = 12345",
+        IndexCandidate("orders", ("user_id",)),
+    )
+
+    assert result.status == "failed"
+    assert "TimeoutError" in result.reason
+    assert conn.invalidated is False
