@@ -1,0 +1,157 @@
+{
+  "captured_at_utc": "2026-10-11T09:09:28.852776+00:00",
+  "requests": {
+    "verify": {
+      "sql": "SELECT * FROM orders WHERE user_id = 12345",
+      "table_name": "orders",
+      "columns": [
+        "user_id"
+      ]
+    },
+    "analyze": {
+      "limit": 100
+    }
+  },
+  "responses": {
+    "health": {
+      "status": "ok",
+      "environment": "development"
+    },
+    "verify": {
+      "query": {
+        "sql": "SELECT * FROM orders WHERE user_id = 12345",
+        "validation": "accepted"
+      },
+      "candidate": {
+        "table": "orders",
+        "columns": [
+          "user_id"
+        ],
+        "operator_classes": null,
+        "validation": "accepted"
+      },
+      "comparison": {
+        "status": "compared",
+        "reason": "The exact proposed hypothetical index appears in the candidate plan.",
+        "baseline_cost": 4167.0,
+        "candidate_cost": 41.92,
+        "baseline_root_node": "Seq Scan",
+        "candidate_root_node": "Bitmap Heap Scan",
+        "candidate_index_name": "<13625>btree_orders_user_id",
+        "candidate_index_used": true,
+        "baseline_plan_summary": {
+          "root_node": "Seq Scan",
+          "root_strategy": "sequential_scan",
+          "scan_strategies": [
+            "sequential_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Seq Scan",
+              "strategy": "sequential_scan",
+              "index_name": null,
+              "estimated_cost": 4167.0,
+              "estimated_rows": 10
+            }
+          ],
+          "total_cost": 4167.0,
+          "estimated_rows": 10,
+          "index_names": []
+        },
+        "candidate_plan_summary": {
+          "root_node": "Bitmap Heap Scan",
+          "root_strategy": "bitmap_heap_scan",
+          "scan_strategies": [
+            "bitmap_heap_scan",
+            "bitmap_index_scan"
+          ],
+          "scan_nodes": [
+            {
+              "node_type": "Bitmap Heap Scan",
+              "strategy": "bitmap_heap_scan",
+              "index_name": null,
+              "estimated_cost": 41.92,
+              "estimated_rows": 10
+            },
+            {
+              "node_type": "Bitmap Index Scan",
+              "strategy": "bitmap_index_scan",
+              "index_name": "<13625>btree_orders_user_id",
+              "estimated_cost": 4.12,
+              "estimated_rows": 10
+            }
+          ],
+          "total_cost": 41.92,
+          "estimated_rows": 10,
+          "index_names": [
+            "<13625>btree_orders_user_id"
+          ]
+        }
+      },
+      "decision": {
+        "status": "accept",
+        "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+        "explanation": "PostgreSQL selected the proposed hypothetical index, and estimated planner cost decreased by 98.99%, meeting the configured minimum of 10.00%.",
+        "estimated_cost_improvement_percent": 98.9940004799616,
+        "minimum_improvement_percent": 10.0
+      },
+      "limitations": [
+        "Planner costs are estimates, not measured execution times.",
+        "A hypothetical index is not a permanent database index.",
+        "Acceptance does not prove an equivalent runtime speedup."
+      ]
+    },
+    "analyze": {
+      "queries_collected": 4,
+      "queries_analyzed": 3,
+      "results": [
+        {
+          "queryid": 6818060036288294747,
+          "calls": 2,
+          "total_exec_time_ms": 87.462503,
+          "mean_exec_time_ms": 43.7312515,
+          "plan_status": "captured",
+          "candidates": [
+            {
+              "table": "orders",
+              "columns": [
+                "user_id"
+              ],
+              "comparison_status": "compared",
+              "decision": "accept",
+              "reason": "Hypothetical index was selected and estimated cost improved above the configured threshold.",
+              "improvement_percent": 99.89009828764493
+            }
+          ]
+        },
+        {
+          "queryid": 7304021801299156526,
+          "calls": 4,
+          "total_exec_time_ms": 1.6848079999999999,
+          "mean_exec_time_ms": 0.42120199999999997,
+          "plan_status": "rejected",
+          "candidates": [],
+          "reason": "Unresolved parameter references are not supported yet."
+        },
+        {
+          "queryid": -2885330479908940062,
+          "calls": 3,
+          "total_exec_time_ms": 0.039383,
+          "mean_exec_time_ms": 0.013127666666666668,
+          "plan_status": "captured",
+          "candidates": [],
+          "reason": "No supported index candidates were generated."
+        },
+        {
+          "queryid": 3056798788834760739,
+          "calls": 3,
+          "total_exec_time_ms": 0.010431,
+          "mean_exec_time_ms": 0.003477,
+          "plan_status": "captured",
+          "candidates": [],
+          "reason": "No supported index candidates were generated."
+        }
+      ]
+    }
+  }
+}

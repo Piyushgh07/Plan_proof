@@ -239,6 +239,9 @@ curl -sS http://localhost:8000/api/v1/analyze \
   -d '{"limit":100}'
 ```
 
+The captured health, verification, and analysis responses are in
+[reports/api-demo-response.json](reports/api-demo-response.json).
+
 ## Tests
 
 Run the unit and API tests:
@@ -257,6 +260,29 @@ reset or recreate named volumes.
 `app/benchmark/workload.py` contains 40 workload queries; scripts under
 `scripts/` compare plans and calculate candidate outcomes. Saved reports are
 exploratory artifacts, not claims about general accuracy or production speed.
+
+Run the current sandbox evaluation with:
+
+```sh
+.venv/bin/python scripts/evaluate_benchmark.py
+```
+
+The run recorded in [reports/benchmark-evaluation.json](reports/benchmark-evaluation.json)
+on 11 October 2026 captured baseline plans for all 40 queries. The evaluator
+compared 13 explicitly mapped index proposals: 8 were accepted, 4 were
+rejected because PostgreSQL did not select the proposed hypothetical index,
+and 1 was inconclusive because its estimated improvement was 4.28%, below the
+10% threshold. That is a 4/13 (30.8%) rejection rate among these successfully
+compared proposals; 1 additional proposal was inconclusive. Eight of the 13
+outcomes agreed with the workload's provisional `CREATE_INDEX` labels. The
+other 27 workload queries had no mapped proposal and are excluded from those
+candidate rates.
+
+This is one deterministic workload run, not a general accuracy estimate.
+Workload labels are provisional annotations rather than ground truth, and the
+evaluator uses explicit proposal mappings rather than comparing heuristic and
+LLM generators. It records PostgreSQL planner estimates only; it does not
+measure execution latency.
 
 The evaluation scripts report planner estimates and plan selection. Estimated
 cost is not measured latency. A real latency claim would require a separate
