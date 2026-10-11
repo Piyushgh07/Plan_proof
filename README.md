@@ -404,8 +404,3 @@ considerations, and measurement methodology.
 - `pg_stat_statements` eligibility and SQL AST validation are conservative
   safeguards, not a complete SQL security boundary.
 
-## Future work
-
-Remaining work includes safely handling parameterized query examples, recording
-controlled runtime benchmarks separately from planner estimates, broadening
-query support, and adding API authentication and operational limits.
