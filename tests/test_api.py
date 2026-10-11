@@ -24,15 +24,21 @@ def fake_comparison(**kwargs):
         candidate_plan=None,
     )
 
-
 @pytest.fixture
 def mock_comparison(monkeypatch):
     async def fake_compare(sql, candidate):
         return fake_comparison()
 
+    async def fake_persist(sql, candidate, comparison, decision):
+        return None
+
     monkeypatch.setattr(
         main, "compare_hypothetical_index", fake_compare
     )
+    monkeypatch.setattr(
+        main, "persist_verification", fake_persist
+    )
+
 
 
 def valid_request():
@@ -137,6 +143,12 @@ def test_sandbox_failure_does_not_accept_candidate(monkeypatch):
     monkeypatch.setattr(
         main, "compare_hypothetical_index", failed_comparison
     )
+    async def fake_persist(sql, candidate, comparison, decision):
+        return None
+
+    monkeypatch.setattr(
+        main, "persist_verification", fake_persist
+    )
 
     response = client.post(
         "/api/v1/verify", json=valid_request()
@@ -194,3 +206,30 @@ def test_live_verification_uses_real_sandbox():
     assert comparison["candidate_index_used"] is True
 
     assert body["decision"]["status"] == "accept"
+
+def test_persistence_failure_returns_safe_response(monkeypatch):
+    async def fake_compare(sql, candidate):
+        return fake_comparison()
+
+    async def failed_persist(sql, candidate, comparison, decision):
+        raise RuntimeError("Sensitive database details")
+
+    monkeypatch.setattr(
+        main, "compare_hypothetical_index", fake_compare
+    )
+    monkeypatch.setattr(
+        main, "persist_verification", failed_persist
+    )
+
+    safe_client = TestClient(
+        main.app, raise_server_exceptions=False
+    )
+    response = safe_client.post(
+        "/api/v1/verify", json=valid_request()
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Verification result could not be saved."
+    )
+    assert "Sensitive database details" not in response.text

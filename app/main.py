@@ -2,7 +2,7 @@
 """FastAPI application for Plan Proof."""
 import logging
 from typing import Any
-
+from app.db.persistence import persist_verification
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -118,6 +118,19 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
     ) from None
 
     decision = decide_index(comparison)
+    try:
+        await persist_verification(
+            request.sql,
+            candidate,
+            comparison,
+            decision,
+        )
+    except Exception:
+        logger.exception("Failed to persist verification result.")
+        raise HTTPException(
+            status_code=503,
+            detail="Verification result could not be saved.",
+        ) from None
 
     return {
         "query": {
