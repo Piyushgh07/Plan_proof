@@ -1,9 +1,10 @@
 # Plan Proof
 
-Plan Proof is a PostgreSQL index advisor that checks index proposals with
-PostgreSQL's planner and HypoPG before recommending them. Candidate generation
-and candidate verification are separate steps: every proposal must pass the
-same validation and sandbox comparison, regardless of its source.
+Plan Proof is a verified PostgreSQL query advisor. It collects slow query
+statistics, explains supported queries, proposes conservative index candidates,
+and checks every candidate with PostgreSQL's planner and HypoPG before making a
+recommendation. The web dashboard displays live workload data, verification
+history, plan evidence, benchmark results, and service readiness.
 
 ## Why it exists
 
@@ -30,8 +31,8 @@ read-only EXPLAIN   representative schema PostgreSQL / app_db
 Collect -> capture plan -> heuristic candidates -> validate
                                       -> compare -> decide -> persist
 
-Redis is included in Compose for the existing development stack. The MVP
-does not use it for job processing.
+Redis is included in Compose and reported by the system readiness check. The
+application does not currently use Redis for job processing.
 ```
 
 The target and sandbox should use matching schema, representative data,
@@ -51,6 +52,8 @@ analysis and verification records in `app_db`.
 
 - Docker Engine with the Compose plugin
 - Python 3.12 for local commands and tests
+- Node.js 22 for local frontend development (the Compose frontend is built in
+  its own container)
 - Approximately 12.6 million benchmark rows when following the complete
   benchmark setup (500k users, 100k products, 2M orders, 5M order items, and
   5M events)
@@ -69,31 +72,38 @@ analysis and verification records in `app_db`.
    private; it is ignored by Git. The example URLs use the published local
    ports.
 
-2. Start the services. Compose initializes an empty target volume with the
-   database roles and statistics extension, and initializes an empty sandbox
-   volume with HypoPG and the benchmark schema:
+2. Start the complete application. Compose initializes an empty target volume
+   with the database roles and statistics extension, and an empty sandbox
+   volume with HypoPG and the benchmark schema. The API applies its Alembic
+   migration when it starts:
 
    ```sh
-   docker compose up -d --build
+   docker compose up --build -d
    docker compose ps
    ```
+
+   Open the dashboard at <http://localhost:3000>. The API is available at
+   <http://localhost:8000> and its interactive documentation at
+   <http://localhost:8000/docs>. Compose reuses existing named volumes; it does
+   not reset or remove database data.
 
    Existing named volumes are reused. Initialization scripts run only when a
    PostgreSQL data directory is first created. If an existing target volume
    predates the reader-role setup, provision that role and its read-only
    grants manually before using `/api/v1/analyze`.
 
-3. Install the Python package and apply the application schema:
+3. For local backend development and benchmark scripts, install Python 3.12:
 
    ```sh
    python3.12 -m venv .venv
    . .venv/bin/activate
    pip install -e '.[dev]'
-   alembic upgrade head
    ```
 
-   Alembic uses `APP_DATABASE_URL` from `.env`. The metadata database is
-   `app_db`, separate from the workload database `target_db`.
+   The Compose API runs migrations automatically. If running the API directly
+   on the host, apply them with `.venv/bin/alembic upgrade head` before starting
+   Uvicorn. The metadata database is `app_db`, separate from the workload
+   database `target_db`.
 
 4. Load the benchmark into the target database if it is empty:
 
@@ -122,9 +132,27 @@ analysis and verification records in `app_db`.
    curl http://localhost:8000/health
    ```
 
-   The `app` service reads Compose service addresses and credential values
+   This optional command starts only the API after the other services are
+   ready. For the full stack, the earlier Compose command is sufficient. The
+   `app` service reads Compose service addresses and credential values
    from `.env`. The host-side Alembic and benchmark commands use the local
    `localhost` URLs in the same file.
+
+### Local frontend development
+
+The web container serves the production build on port 3000. To run the Vite
+development server instead, keep the Compose API and databases running, then:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open <http://localhost:5173>; Vite proxies `/api` and `/health` to the local API
+on port 8000. `npm run typecheck` checks TypeScript, and `npm run build`
+produces the same static frontend used by Compose. `frontend/.env.example`
+contains the optional API base URL setting and no credentials.
 
 ## Environment variables
 
@@ -193,6 +221,22 @@ comparison status, decision, explanation, and estimated cost improvement.
 Queries that fail validation or have no supported candidates receive a clear
 reason instead of a fabricated verification.
 
+The same endpoint accepts `{"sql":"SELECT ..."}` to analyze one submitted
+query. It returns the captured plan, heuristic candidates, comparison evidence,
+and decision. Queries with unresolved `$1` parameters remain unsupported; the
+advisor never guesses values.
+
+### Read APIs
+
+- `GET /api/v1/workload?limit=100` returns actual `pg_stat_statements` query
+  text, calls, execution-time statistics, row counts, and parameter eligibility.
+- `GET /api/v1/history?limit=20&offset=0` lists persisted verification runs;
+  `GET /api/v1/history/{run_id}` returns one run with its plans and outcomes.
+- `GET /api/v1/benchmark` serves the checked-in benchmark evaluation report.
+- `GET /api/v1/status` checks the application database, read-only target,
+  sandbox HypoPG extension, and Redis. It returns generic errors only, never
+  connection strings or credentials.
+
 ## How verification works
 
 1. Parse the input with `pglast`; accept exactly one non-locking `SELECT`.
@@ -224,8 +268,12 @@ curl -sS http://localhost:8000/api/v1/analyze \
   -d '{"limit":10}'
 ```
 
-`/verify` demonstrates a direct proposal. `/analyze` demonstrates collection,
-plan capture, candidate generation, verification, and persistence. Its results
+The dashboard at <http://localhost:3000> includes Overview, Query workload,
+Analyze query, Analysis history, Benchmark, and System status screens. The
+Analyze screen accepts a SELECT and offers direct candidate verification with
+baseline and candidate plan summaries. `/verify` demonstrates a direct
+proposal. `/analyze` demonstrates collection, plan capture, candidate
+generation, verification, and persistence. Its results
 depend on actual query statistics in the target. `pg_stat_statements` commonly
 normalizes constants to `$1`; those query entries are reported as unsupported
 until the project has a safe way to bind representative parameter values.
@@ -299,8 +347,8 @@ considerations, and measurement methodology.
   extensions must be kept representative of one another.
 - HypoPG results are planner estimates and do not measure execution time,
   write overhead, storage use, or operational impact.
-- There is no authentication, dashboard, background queue, automatic index
-  application, or LLM candidate generator in the MVP.
+- There is no authentication, background queue, automatic index application,
+  or LLM candidate generator. Keep the dashboard on a trusted local network.
 - `pg_stat_statements` eligibility and SQL AST validation are conservative
   safeguards, not a complete SQL security boundary.
 

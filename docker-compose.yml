@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: plan-proof-app
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -20,6 +21,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - plan-proof
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: plan-proof-web
+    ports:
+      - "3000:80"
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - plan-proof
 
