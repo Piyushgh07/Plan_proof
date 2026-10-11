@@ -1,8 +1,8 @@
-
 """FastAPI application for Plan Proof."""
+
 import logging
 from typing import Any
-from app.db.persistence import persist_verification
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,7 +10,9 @@ from app.collector.validator import (
     contains_parameter_reference,
     validate_select,
 )
+from app.collector.workflow import analyze_slow_queries
 from app.core.settings import settings
+from app.db.persistence import persist_verification
 from app.verifier.candidates import (
     IndexCandidate,
     validate_index_candidate,
@@ -39,6 +41,14 @@ class VerifyRequest(BaseModel):
     table_name: str = Field(min_length=1, max_length=63)
     columns: list[str] = Field(min_length=1, max_length=4)
     operator_classes: list[str | None] | None = None
+
+
+class AnalyzeRequest(BaseModel):
+    """Request a slow-query analysis of the current target workload."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    limit: int = Field(default=10, ge=1, le=100)
 
 
 def summarize_or_none(
@@ -107,15 +117,15 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
 
     try:
         comparison = await compare_hypothetical_index(
-        request.sql,
-        candidate,
-    )
+            request.sql,
+            candidate,
+        )
     except Exception:
         logger.exception("Unexpected error during index verification.")
         raise HTTPException(
             status_code=503,
             detail="Verification service temporarily unavailable.",
-    ) from None
+        ) from None
 
     decision = decide_index(comparison)
     try:
@@ -124,6 +134,7 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
             candidate,
             comparison,
             decision,
+            source="user",
         )
     except Exception:
         logger.exception("Failed to persist verification result.")
@@ -178,3 +189,16 @@ async def verify_index(request: VerifyRequest) -> dict[str, Any]:
             "Acceptance does not prove an equivalent runtime speedup.",
         ],
     }
+
+
+@app.post("/api/v1/analyze")
+async def analyze_queries(request: AnalyzeRequest) -> dict[str, Any]:
+    """Analyze slow queries and verify generated index candidates."""
+    try:
+        return await analyze_slow_queries(request.limit)
+    except Exception:
+        logger.exception("Slow-query analysis failed.")
+        raise HTTPException(
+            status_code=503,
+            detail="Slow-query analysis service temporarily unavailable.",
+        ) from None

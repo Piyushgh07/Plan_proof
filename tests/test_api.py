@@ -29,7 +29,7 @@ def mock_comparison(monkeypatch):
     async def fake_compare(sql, candidate):
         return fake_comparison()
 
-    async def fake_persist(sql, candidate, comparison, decision):
+    async def fake_persist(sql, candidate, comparison, decision, **kwargs):
         return None
 
     monkeypatch.setattr(
@@ -143,7 +143,7 @@ def test_sandbox_failure_does_not_accept_candidate(monkeypatch):
     monkeypatch.setattr(
         main, "compare_hypothetical_index", failed_comparison
     )
-    async def fake_persist(sql, candidate, comparison, decision):
+    async def fake_persist(sql, candidate, comparison, decision, **kwargs):
         return None
 
     monkeypatch.setattr(
@@ -233,3 +233,42 @@ def test_persistence_failure_returns_safe_response(monkeypatch):
         "Verification result could not be saved."
     )
     assert "Sensitive database details" not in response.text
+
+
+def test_analyze_endpoint_returns_workflow_result(monkeypatch):
+    async def fake_analyze(limit):
+        assert limit == 5
+        return {
+            "queries_collected": 1,
+            "queries_analyzed": 1,
+            "results": [],
+        }
+
+    monkeypatch.setattr(main, "analyze_slow_queries", fake_analyze)
+
+    response = client.post("/api/v1/analyze", json={"limit": 5})
+
+    assert response.status_code == 200
+    assert response.json()["queries_collected"] == 1
+
+
+def test_analyze_unexpected_error_returns_safe_response(monkeypatch):
+    async def unexpected_failure(limit):
+        raise RuntimeError("Sensitive analysis internals")
+
+    monkeypatch.setattr(main, "analyze_slow_queries", unexpected_failure)
+
+    safe_client = TestClient(main.app, raise_server_exceptions=False)
+    response = safe_client.post("/api/v1/analyze", json={})
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Slow-query analysis service temporarily unavailable."
+    )
+    assert "Sensitive analysis internals" not in response.text
+
+
+def test_analyze_rejects_invalid_limit():
+    response = client.post("/api/v1/analyze", json={"limit": 0})
+
+    assert response.status_code == 422

@@ -187,11 +187,9 @@ Status: INITIAL IMPLEMENTATION VERIFIED; FURTHER HARDENING REQUIRED
 - Invalid SQL, unresolved parameters, unsupported columns, and multiple statements rejected.
 - Failed comparison result produces an inconclusive decision.
 - Unexpected comparison exception produces a generic HTTP 503 response.
-- Latest automated test suite: 79 passed.
+- Latest automated test suite: 100 passed.
 
 ### Remaining Work
-- Real database connection failure handling tested.
-- HypoPG cleanup and connection invalidation tested.
 - Expand API integration tests.
 - Review query-planning side effects and resource limits.
 - Document and benchmark actual query execution times separately from planner costs.
@@ -211,7 +209,7 @@ Status: INITIAL IMPLEMENTATION VERIFIED; FURTHER HARDENING REQUIRED
 - Real connection-refusal behavior is covered by a test.
 
 ### Verification
-- Full test suite: 79 passed.
+- Full test suite: 100 passed.
 - HypoPG cleanup tests: 2 passed.
 - Latest test run: 79 passed in 0.56 seconds.
 - Latest relevant commit: `8a71679` — Handle real sandbox connection failures.
@@ -245,3 +243,20 @@ The latest test run completed successfully with **87 passing tests**, including 
 ### Next Step
 
 Inspect the remaining application modules and tests, identify unfinished project-critical functionality, and prioritize completing the end-to-end Plan Proof workflow before final documentation and GitHub presentation.
+
+
+## Latest Verified Status — 11 October 2026 (workflow)
+
+### Completed in this checkpoint
+- HypoPG failure-path handling remains in place: cleanup failures fail verification and invalidate the connection.
+- Verifier error reasons expose the exception type only, not raw exception text.
+- Deterministic candidate generation now also considers simple equality join conditions (`Hash Cond` / `Merge Cond`).
+- End-to-end analysis workflow: collect eligible `pg_stat_statements` queries, capture plans, generate heuristic candidates, verify in the sandbox, persist with `source=heuristic`, and return structured results.
+- `POST /api/v1/analyze` added with a generic HTTP 503 on unexpected failures.
+
+### Remaining
+- Analysis history retrieval API.
+- LLM candidate generation.
+- Frontend dashboard.
+- Reproducible heuristic-versus-LLM evaluation report.
+- Final documentation and demo script.

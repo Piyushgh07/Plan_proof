@@ -9,7 +9,17 @@ from app.db.models import AnalysisRun, Candidate, QueryRecord, Verification
 from app.db.session import AsyncSessionLocal
 
 
-async def persist_verification(sql, candidate, comparison, decision) -> None:
+async def persist_verification(
+    sql,
+    candidate,
+    comparison,
+    decision,
+    *,
+    source: str = "user",
+    calls: int = 0,
+    total_exec_time_ms: float = 0,
+    mean_exec_time_ms: float = 0,
+) -> None:
     """Save a verification and its related records in one transaction."""
 
     fingerprint = hashlib.sha256(sql.encode("utf-8")).hexdigest()
@@ -47,43 +57,42 @@ async def persist_verification(sql, candidate, comparison, decision) -> None:
         "improvement_percent": decision.improvement_percent,
     }
 
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            run = AnalysisRun(
-                status=decision.status,
-                target_database=database_name,
-            )
-            session.add(run)
-            await session.flush()
+    async with AsyncSessionLocal() as session, session.begin():
+        run = AnalysisRun(
+            status=decision.status,
+            target_database=database_name,
+        )
+        session.add(run)
+        await session.flush()
 
-            query = QueryRecord(
-                analysis_run_id=run.id,
-                query_fingerprint=fingerprint,
-                sql_text=sql,
-                calls=0,
-                total_exec_time_ms=0,
-                mean_exec_time_ms=0,
-                plan=comparison.baseline_plan,
-            )
-            session.add(query)
-            await session.flush()
+        query = QueryRecord(
+            analysis_run_id=run.id,
+            query_fingerprint=fingerprint,
+            sql_text=sql,
+            calls=calls,
+            total_exec_time_ms=total_exec_time_ms,
+            mean_exec_time_ms=mean_exec_time_ms,
+            plan=comparison.baseline_plan,
+        )
+        session.add(query)
+        await session.flush()
 
-            stored_candidate = Candidate(
-                query_id=query.id,
-                source="user",
-                action="create_index",
-                proposal_sql=proposal_sql,
-                rationale=decision.reason,
-            )
-            session.add(stored_candidate)
-            await session.flush()
+        stored_candidate = Candidate(
+            query_id=query.id,
+            source=source,
+            action="create_index",
+            proposal_sql=proposal_sql,
+            rationale=decision.reason,
+        )
+        session.add(stored_candidate)
+        await session.flush()
 
-            verification = Verification(
-                candidate_id=stored_candidate.id,
-                verifier="hypopg",
-                verdict=decision.status,
-                baseline_cost=comparison.baseline_cost,
-                candidate_cost=comparison.candidate_cost,
-                details=details,
-            )
-            session.add(verification)
+        verification = Verification(
+            candidate_id=stored_candidate.id,
+            verifier="hypopg",
+            verdict=decision.status,
+            baseline_cost=comparison.baseline_cost,
+            candidate_cost=comparison.candidate_cost,
+            details=details,
+        )
+        session.add(verification)

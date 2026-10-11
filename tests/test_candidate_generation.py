@@ -90,3 +90,35 @@ def test_deduplicates_candidates():
     }]
 
     assert len(generate_candidates(plan)) == 1
+
+
+def test_generates_candidates_from_hash_join_condition():
+    plan = [{
+        "Plan": {
+            "Node Type": "Hash Join",
+            "Join Type": "Anti",
+            "Hash Cond": "(oi.order_id = o.id)",
+            "Plans": [
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "order_items",
+                    "Alias": "oi",
+                },
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "orders",
+                    "Alias": "o",
+                },
+            ],
+        }
+    }]
+
+    candidates = generate_candidates(plan)
+
+    assert {
+        (candidate.table_name, candidate.columns)
+        for candidate in candidates
+    } == {
+        ("order_items", ("order_id",)),
+        ("orders", ("id",)),
+    }

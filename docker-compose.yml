@@ -7,9 +7,9 @@ services:
     env_file:
       - .env
     environment:
-      APP_DATABASE_URL: postgresql+asyncpg://app_user:app_password@target:5432/app_db
-      TARGET_DATABASE_URL: postgresql://plan_proof_reader:PlanProofReader_21542_29157@target:5432/target_db
-      SANDBOX_DATABASE_URL: postgresql://sandbox_admin:piyush_sandbox_21542@sandbox:5432/sandbox_db
+      APP_DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-app_user}:${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}@target:5432/app_db
+      TARGET_DATABASE_URL: postgresql://${TARGET_READER_USER:-plan_proof_reader}:${TARGET_READER_PASSWORD:?Set TARGET_READER_PASSWORD in .env}@target:5432/target_db
+      SANDBOX_DATABASE_URL: postgresql://${SANDBOX_USER:-sandbox_admin}:${SANDBOX_PASSWORD:?Set SANDBOX_PASSWORD in .env}@sandbox:5432/sandbox_db
       REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
@@ -28,8 +28,12 @@ services:
     container_name: plan-proof-target
     environment:
       POSTGRES_USER: target_admin
-      POSTGRES_PASSWORD: target_admin_password
+      POSTGRES_PASSWORD: ${TARGET_ADMIN_PASSWORD:?Set TARGET_ADMIN_PASSWORD in .env}
       POSTGRES_DB: target_db
+      APP_DB_USER: ${APP_DB_USER:-app_user}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}
+      TARGET_READER_USER: ${TARGET_READER_USER:-plan_proof_reader}
+      TARGET_READER_PASSWORD: ${TARGET_READER_PASSWORD:?Set TARGET_READER_PASSWORD in .env}
     command:
       - postgres
       - -c
@@ -40,6 +44,7 @@ services:
       - "5433:5432"
     volumes:
       - target_data:/var/lib/postgresql/data
+      - ./docker/target/init-roles.sh:/docker-entrypoint-initdb.d/00-init-roles.sh:ro
       - ./docker/target/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test:
@@ -57,13 +62,14 @@ services:
       dockerfile: Dockerfile
     container_name: plan-proof-sandbox
     environment:
-      POSTGRES_USER: sandbox_admin
-      POSTGRES_PASSWORD: sandbox_admin_password
+      POSTGRES_USER: ${SANDBOX_USER:-sandbox_admin}
+      POSTGRES_PASSWORD: ${SANDBOX_PASSWORD:?Set SANDBOX_PASSWORD in .env}
       POSTGRES_DB: sandbox_db
     ports:
       - "5434:5432"
     volumes:
       - sandbox_data:/var/lib/postgresql/data
+      - ./docker/sandbox/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test:
         - CMD-SHELL

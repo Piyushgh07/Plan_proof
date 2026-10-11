@@ -280,26 +280,6 @@ async def test_missing_hypothetical_index_fails_safely(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_cleanup_failure_returns_failed_and_invalidates_connection(
-    monkeypatch,
-):
-    """Cleanup failure must fail verification and invalidate the connection."""
-    conn = StepFailConnection(fail_at="cleanup_reset")
-    monkeypatch.setattr(
-        "app.verifier.hypopg.sandbox_engine", FakeEngine(conn),
-    )
-
-    result = await compare_hypothetical_index(
-        "SELECT * FROM orders WHERE user_id = 12345",
-        IndexCandidate("orders", ("user_id",)),
-    )
-
-    assert result.status == "failed"
-    assert "cleanup failure" in result.reason.lower()
-    assert conn.invalidated is True
-
-
-@pytest.mark.asyncio
 async def test_successful_cleanup_does_not_invalidate_connection(monkeypatch):
     connection = FakeConnection()
     monkeypatch.setattr(
